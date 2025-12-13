@@ -1,0 +1,11 @@
+{
+  "wahana": {
+    "wahana1": { "batch": 1, "group": 1, "step": 0 },
+    "wahana2": { "batch": 1, "group": 1, "step": 0 },
+    "wahana3": { "batch": 1, "group": 1, "step": 0 },
+    "wahana4": { "batch": 1, "group": 1, "step": 0 },
+    "wahana5": { "batch": 1, "group": 1, "step": 0 },
+    "wahana6": { "batch": 1, "group": 1, "step": 0 },
+    "wahana7": { "batch": 1, "group": 1, "step": 0 }
+  }
+}
