@@ -1,43 +1,25 @@
-import { useNavigate } from "react-router-dom";
-import { ref, set } from "firebase/database";
-import { db } from "../firebase";
-import { OFFICERS } from "../constants/officers";
+import { Link } from "react-router-dom";
 
 export default function Home() {
-  const navigate = useNavigate();
-
+  const btn = "bg-gray-700 px-6 py-3 rounded text-center hover:bg-gray-600";
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center px-6">
-      <h1 className="text-3xl font-bold mb-10">
-        PILIH OFFICER
-      </h1>
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center gap-6">
+      <h1 className="text-2xl font-bold">Pilih Wahana</h1>
 
-      {/* 🔵 TOMBOL OFFICER */}
-      <div className="grid grid-cols-2 gap-4 w-full max-w-md">
-        {Object.keys(OFFICERS).map((id) => (
-          <button
-            key={id}
-            onClick={() => navigate(`/officer/${id}`)}
-            className="bg-blue-600 hover:bg-blue-700 py-4 rounded-xl font-bold"
-          >
-            {OFFICERS[id]}
-          </button>
-        ))}
+      <div className="grid grid-cols-2 gap-4">
+        <Link to="/officer/1" className={btn}>Hologram</Link>
+        <Link to="/officer/train" className={btn}>Train 1 & 2</Link>
+        <Link to="/officer/3" className={btn}>Dream Farm</Link>
+        <Link to="/officer/4" className={btn}>Space-X</Link>
+        <Link to="/officer/6" className={btn}>Tunel</Link>
+        <Link to="/officer/7" className={btn}>Chamber AI</Link>
+        <Link to="/officer/8" className={btn}>Gondola</Link>
       </div>
-      {/* 👁 MODE MONITOR */}
-      <button
-        onClick={() => navigate("/monitor")}
-        className="
-          mt-6 w-full max-w-md py-5 rounded-2xl
-          border-2 border-green-400
-          text-green-400 font-bold text-lg
-          hover:bg-green-500 hover:text-black
-          transition
-        "
-      >
-        👁 MODE MONITOR (LEADER)
-      </button>
+
+      <Link to="/monitor" className="mt-6 bg-blue-600 px-6 py-3 rounded font-bold">
+        MODE MONITOR
+      </Link>
     </div>
   );
 }

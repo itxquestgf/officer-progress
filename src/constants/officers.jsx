@@ -1,9 +1,10 @@
 export const OFFICERS = {
-  1: "Riyan x Rista",
-  2: "Indah",
-  3: "Sri",
-  4: "Rizal x Delan",
-  5: "Berril x Arni",
-  6: "Rendi",
-  7: "Rido",
+  1: "Hologram",
+  2: "Train 1",
+  3: "Dream Farm",
+  4: "Space-X",
+  5: "Train 2",
+  6: "Tunel",
+  7: "Chamber AI & B. Gondola",
+  8: "Gondola"
 };

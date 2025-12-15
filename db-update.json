@@ -1,0 +1,13 @@
+{
+  "wahana": {
+    "wahana1": { "batch": 1, "group": 1, "step": 0, "startTime": null },
+    "wahana2": { "batch": 1, "group": 1, "step": 0, "startTime": null },
+    "wahana3": { "batch": 1, "group": 1, "step": 0, "startTime": null },
+    "wahana4": { "batch": 1, "group": 1, "step": 0, "startTime": null },
+    "wahana5": { "batch": 1, "group": 1, "step": 0, "startTime": null },
+    "wahana6": { "batch": 1, "group": 1, "step": 0, "startTime": null },
+    "wahana7": { "batch": 1, "group": 1, "step": 0, "startTime": null },
+    "wahana8": { "batch": 1, "group": 1, "step": 0, "startTime": null }
+  },
+  "logs": {}
+}
