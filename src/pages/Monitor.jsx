@@ -27,28 +27,25 @@ export default function Monitor() {
     });
   }, []);
 
-  // 🔽 KURANGI GROUP
-  const decreaseGroup = (key) => {
-    const data = wahana[key];
-    if (!data || data.group <= 1) return;
-
-    update(ref(db, `wahana/${key}`), {
-      group: data.group - 1,
-    });
-  };
-
-  // 🔽 KURANGI BATCH
+  // ❌ KURANGI BATCH (dipakai di tiap group)
   const decreaseBatch = (key) => {
-    const data = wahana[key];
-    if (!data || data.batch <= 1) return;
+  const data = wahana[key];
+  if (!data || data.batch <= 1) return;
 
-    update(ref(db, `wahana/${key}`), {
-      batch: data.batch - 1,
-      group: 1, // reset group agar aman
-    });
-  };
+  const currentBatch = data.batch;
 
-  // 🔄 reset SEMUA
+  // 1️⃣ turunkan batch aktif
+  update(ref(db, `wahana/${key}`), {
+    batch: currentBatch - 1,
+    group: 1,
+  });
+
+  // 2️⃣ hapus log batch yang dikurangi
+  remove(ref(db, `logs/${key}/batch${currentBatch}`));
+};
+
+
+  // 🔄 reset semua
   const resetAll = () => {
     const updates = {};
 
@@ -84,14 +81,12 @@ export default function Monitor() {
                 {WAHANA[i]}
               </h2>
 
-              {/* INFO AKTIF */}
               {data && (
                 <p className="text-sm mb-3 text-gray-300">
                   Aktif: Batch {data.batch} • Group {data.group}
                 </p>
               )}
 
-              {/* LOG */}
               {[1,2,3,4].map((batch) => (
                 <div key={batch} className="mb-2">
                   <div className="font-semibold text-sm mb-1">
@@ -117,8 +112,17 @@ export default function Monitor() {
                       return (
                         <div
                           key={group}
-                          className="bg-gray-700 rounded-md px-2 py-1 text-center"
+                          className="relative bg-gray-700 rounded-md px-2 py-2 text-center"
                         >
+                          {/* ❌ KURANGI BATCH */}
+                          <button
+                            onClick={() => decreaseBatch(key)}
+                            className="absolute top-1 right-1 text-red-400 hover:text-red-600 text-xs font-bold"
+                            title="Kurangi Batch"
+                          >
+                            ✕
+                          </button>
+
                           Group {group}
                           <br />
                           <span className="text-yellow-300">
@@ -130,29 +134,11 @@ export default function Monitor() {
                   </div>
                 </div>
               ))}
-
-              {/* 🔧 KONTROL MANUAL */}
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={() => decreaseGroup(key)}
-                  className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-bold"
-                >
-                  − Group
-                </button>
-
-                <button
-                  onClick={() => decreaseBatch(key)}
-                  className="px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-xs font-bold"
-                >
-                  − Batch
-                </button>
-              </div>
             </div>
           );
         })}
       </div>
 
-      {/* RESET SEMUA */}
       <div className="flex justify-center mt-8">
         <button
           onClick={resetAll}
