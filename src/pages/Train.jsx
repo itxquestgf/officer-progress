@@ -166,12 +166,12 @@ export default function Train() {
 
               <button
                 onClick={() => handleClick(key)}
-                className={`w-28 h-28 rounded-full ${getColor(data?.step)}`}
+                className={`w-24 h-24 rounded-full ${getColor(data?.step)}`}
               />
 
               <button
                 onClick={() => resetWrongClick(key)}
-                className="mt-4 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-xs font-bold"
+                className="text-sm w-auto h-10 px-6 py-3 mt-12 rounded-xl bg-red-600 hover:bg-red-700 font-bold"
               >
                 Reset Salah Klik
               </button>

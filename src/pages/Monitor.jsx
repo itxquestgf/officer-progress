@@ -108,11 +108,12 @@ export default function Monitor() {
       {/* RESET */}
       <div className="flex justify-center mt-8">
         <button
-          onClick={resetAll}
-          className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 font-bold"
-        >
-          Reset Semua Batch & Group
-        </button>
+  onClick={resetAll}
+  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-sm font-semibold"
+>
+  Reset Semua Batch & Group
+</button>
+
       </div>
     </div>
   );
