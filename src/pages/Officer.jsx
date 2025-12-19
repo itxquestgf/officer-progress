@@ -126,39 +126,75 @@ export default function Officer() {
   };
 
   // Handle previous
-  const handlePrevious = async () => {
-  if (!myData) return;
+const handlePrevious = async () => {
+  if (!myData || myData.step !== 0) return;
 
-  const { batch, group, step } = myData;
+  let { batch, group } = myData;
 
-  // hanya boleh saat idle
-  if (step !== 0) return;
-
-  // sudah paling awal
-  if (batch === 1 && group === 1) return;
-
-  let prevBatch = batch;
-  let prevGroup = group - 1;
-
-  if (prevGroup < 1) {
-    prevBatch = batch - 1;
-    prevGroup = 3;
+  if (group > 1) {
+    group--;
+  } else if (batch > 1) {
+    batch--;
+    group = 3;
   }
 
-  // hapus data group yang salah
-  await remove(
-    ref(db, `logs/${key}/batch${batch}/group${group}`)
-  );
-
-  // update posisi officer
   set(ref(db, `wahana/${key}`), {
     ...myData,
-    batch: prevBatch,
-    group: prevGroup,
+    batch,
+    group,
     step: 0,
     startTime: null,
   });
 };
+// skip andle
+const handleSkipGroup = async () => {
+  if (!myData || myData.step !== 0) return;
+
+  const { batch, group } = myData;
+
+  await set(
+    ref(db, `logs/${key}/batch${batch}/group${group}`),
+    { skipped: true }
+  );
+
+  let nextBatch = batch;
+  let nextGroup = group + 1;
+
+  if (nextGroup > 3) {
+    nextGroup = 1;
+    nextBatch++;
+  }
+
+  set(ref(db, `wahana/${key}`), {
+    ...myData,
+    batch: nextBatch,
+    group: nextGroup,
+    step: 0,
+    startTime: null,
+  });
+};
+  //Skip Batch
+  const handleSkipBatch = async () => {
+  if (!myData || myData.step !== 0) return;
+
+  const { batch } = myData;
+
+  // tandai satu batch full di-skip
+  await set(
+    ref(db, `logs/${key}/batch${batch}`),
+    { skipped: true }
+  );
+
+  set(ref(db, `wahana/${key}`), {
+    ...myData,
+    batch: batch + 1,
+    group: 1,
+    step: 0,
+    startTime: null,
+  });
+};
+
+
 
 
 
@@ -216,26 +252,36 @@ export default function Officer() {
     flex items-center justify-center`}
       />
       <div className="flex gap-4 mt-6">
-  {/* PREVIOUS */}
+        <div className="flex gap-4 mt-6">
   <button
     onClick={handlePrevious}
-    disabled={myData?.step !== 0}
-    className={`px-4 py-2 rounded-lg text-sm font-bold
-      ${myData?.step === 0
-        ? "bg-gray-600 hover:bg-gray-500"
-        : "bg-gray-800 opacity-40 cursor-not-allowed"}
-    `}
+    className="px-4 py-2 rounded-lg bg-gray-600 text-sm font-bold"
   >
-    ◀ Previous
+    Previous
   </button>
 
-  {/* RESET */}
   <button
-    onClick={resetWrongClick}
-    className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-sm font-bold"
+    onClick={handleSkipBatch}
+    className="px-4 py-2 rounded-lg bg-orange-500 text-sm font-bold"
   >
-    Reset
+    Skip Batch
   </button>
+
+  <button
+    onClick={handleSkipGroup}
+    className="px-4 py-2 rounded-lg bg-yellow-500 text-sm font-bold"
+  >
+    Skip Group
+  </button>
+</div>
+
+<button
+  onClick={resetWrongClick}
+  className="mt-4 px-6 py-2 rounded-xl bg-red-600 font-bold text-sm"
+>
+  Reset Salah Klik
+</button>
+
 </div>
       <p className="mt-6 text-xs opacity-60 text-center">
         Kalo salah klik don't panic ges<br />
