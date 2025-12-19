@@ -41,9 +41,19 @@ export default function Train() {
   };
 
   /* =========================
+      HITUNG DURASI
+  ========================== */
+  const calcDuration = (start) => {
+    const diff = Math.floor((Date.now() - start) / 1000);
+    return {
+      minutes: Math.floor(diff / 60),
+      seconds: diff % 60,
+    };
+  };
+
+  /* =========================
       LOGIC UTAMA
   ========================== */
-
   const handleClick = (key) => {
     const data = allWahana[key];
     if (!data) return;
@@ -51,15 +61,33 @@ export default function Train() {
     let { batch, group, step, startTime = null } = data;
     const now = Date.now();
 
+    // IDLE → PROSES
     if (step === 0) {
       step = 1;
       startTime = now;
-    } else if (step === 1) {
+    }
+
+    // PROSES → READY (SIMPAN LOG)
+    else if (step === 1) {
       step = 2;
+
+      if (startTime) {
+        const duration = calcDuration(startTime);
+
+        set(
+          ref(db, `logs/${key}/batch${batch}/group${group}`),
+          { duration }
+        );
+      }
+
       startTime = null;
-    } else if (step === 2) {
+    }
+
+    // READY → IDLE (NEXT GROUP)
+    else if (step === 2) {
       step = 0;
       group++;
+
       if (group > 3) {
         group = 1;
         batch++;
@@ -74,6 +102,9 @@ export default function Train() {
     });
   };
 
+  /* =========================
+      PREVIOUS / SKIP
+  ========================== */
   const previousGroup = (key) => {
     const data = allWahana[key];
     if (!data) return;
@@ -140,6 +171,9 @@ export default function Train() {
     });
   };
 
+  /* =========================
+      UI
+  ========================== */
   return (
     <div className="min-h-screen bg-gray-900 text-white px-6 py-8">
 
@@ -147,7 +181,7 @@ export default function Train() {
         Monitor Train
       </h1>
 
-      {/* 🔵 8 PROGRES WAHANA (WAJIB ADA) */}
+      {/* 🔵 8 PROGRES WAHANA */}
       <div className="grid grid-cols-4 gap-x-10 gap-y-6 mb-14">
         {[1,2,3,4,5,6,7,8].map((i) => {
           const data = allWahana[`wahana${i}`];
