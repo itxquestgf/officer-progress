@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
+import Logo from "../assets/logo.png";
 
 export default function Home() {
   const btn = "bg-gray-700 px-6 py-3 rounded text-center hover:bg-gray-600";
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center gap-6">
-      <h1 className="text-2xl font-bold">Pilih Wahana</h1>
-
+      <img src={Logo} width={200} alt="logo" className="pb-5" />
       <div className="grid grid-cols-2 gap-4">
         <Link to="/officer/1" className={btn}>Hologram</Link>
         <Link to="/officer/train" className={btn}>Train 1 & 2</Link>
