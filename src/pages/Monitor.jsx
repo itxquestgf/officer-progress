@@ -33,6 +33,9 @@ export default function Monitor() {
     return "bg-gray-400";                  // IDLE
   };
 
+  /* =========================
+      RESET SEMUA
+  ========================== */
   const resetAll = () => {
     const updates = {};
 
@@ -50,6 +53,9 @@ export default function Monitor() {
     remove(ref(db, "logs"));
   };
 
+  /* =========================
+      DOWNLOAD CSV
+  ========================== */
   const downloadCSV = () => {
     let csv = "Wahana,Batch,Group,Menit,Detik\n";
 
@@ -57,51 +63,42 @@ export default function Monitor() {
       const wahanaIndex = wahanaKey.replace("wahana", "");
       const wahanaName = WAHANA[wahanaIndex] || wahanaKey;
 
-      const batches = logs[wahanaKey];
-      Object.keys(batches).forEach((batchKey) => {
-        const batchNumber = batchKey.replace("batch", "");
-        const groups = batches[batchKey];
-
-        Object.keys(groups).forEach((groupKey) => {
-          const groupNumber = groupKey.replace("group", "");
-          const duration = groups[groupKey]?.duration;
-
-          if (duration) {
-            csv += `${wahanaName},${batchNumber},${groupNumber},${duration.minutes},${duration.seconds}\n`;
+      Object.keys(logs[wahanaKey] || {}).forEach((batchKey) => {
+        Object.keys(logs[wahanaKey][batchKey] || {}).forEach((groupKey) => {
+          const d = logs[wahanaKey][batchKey][groupKey]?.duration;
+          if (d) {
+            csv += `${wahanaName},${batchKey.replace("batch","")},${groupKey.replace("group","")},${d.minutes},${d.seconds}\n`;
           }
         });
       });
     });
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
-    link.href = url;
+    link.href = URL.createObjectURL(blob);
     link.download = "monitor_wahana.csv";
     link.click();
-
-    URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <h1 className="text-2xl font-bold mb-6 text-center">
+    <div className="min-h-screen bg-gray-900 text-white p-4">
+
+      <h1 className="text-xl font-bold text-center mb-4">
         Monitor Progress Wahana
       </h1>
 
-      {/* 🔵 8 BULATAN PROGRES DI BAWAH JUDUL */}
-      <div className="grid grid-cols-8 gap-4 mb-10 justify-center">
+      {/* 🔵 8 BULATAN STATUS (MOBILE FRIENDLY) */}
+      <div className="grid grid-cols-4 gap-y-4 gap-x-2 mb-8">
         {[1,2,3,4,5,6,7,8].map((i) => {
           const data = wahana[`wahana${i}`];
           return (
             <div key={i} className="flex flex-col items-center text-center">
-              <div className={`w-10 h-10 rounded-full ${getColor(data?.step)}`} />
-              <span className="text-xs mt-1 text-yellow-400 font-semibold">
+              <div className={`w-9 h-9 rounded-full ${getColor(data?.step)}`} />
+              <span className="text-[11px] mt-1 font-semibold text-yellow-400 leading-tight">
                 {WAHANA[i]}
               </span>
               {data && (
-                <span className="text-[11px] mt-0.5 text-yellow-300">
+                <span className="text-[10px] text-yellow-300">
                   B{data.batch} • G{data.group}
                 </span>
               )}
@@ -110,53 +107,62 @@ export default function Monitor() {
         })}
       </div>
 
-      {/* 🔁 LIST MINUT/DETIK PER BATCH/GROUP (TIDAK DIUBAH) */}
+      {/* ===============================
+          LIST TIMING (TETAP SEPERTI ASLI)
+         =============================== */}
       <div className="space-y-6">
-        {[1,2,3,4,5].map((batch) => (
-          <div key={batch} className="bg-gray-800 rounded-xl p-4">
-            <h2 className="font-bold text-lg mb-3 text-yellow-400">
-              Batch {batch}
-            </h2>
+        {[1,2,3,4,5,6,7,8].map((i) => {
+          const wahanaLogs = logs[`wahana${i}`] || {};
+          return (
+            <div key={i} className="bg-gray-800 rounded-xl p-4">
+              <h2 className="font-bold text-lg mb-3 text-yellow-400">
+                {WAHANA[i]}
+              </h2>
 
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              {[1,2,3].map((group) => {
-                return (
-                  <div key={group} className="bg-gray-700 rounded-md px-2 py-1 text-center">
-                    {Object.keys(WAHANA).map((wIndex) => {
-                      const duration = logs[`wahana${wIndex}`]?.[`batch${batch}`]?.[`group${group}`]?.duration;
-                      const minutes = duration?.minutes != null ? String(duration.minutes).padStart(2, "0") : "--";
-                      const seconds = duration?.seconds != null ? String(duration.seconds).padStart(2, "0") : "--";
+              {[1,2,3,4,5].map((batch) => (
+                <div key={batch} className="mb-2">
+                  <div className="font-semibold text-sm mb-1">
+                    Batch {batch}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    {[1,2,3].map((group) => {
+                      const d =
+                        wahanaLogs?.[`batch${batch}`]?.[`group${group}`]?.duration;
+
+                      const m = d?.minutes != null ? String(d.minutes).padStart(2,"0") : "--";
+                      const s = d?.seconds != null ? String(d.seconds).padStart(2,"0") : "--";
 
                       return (
-                        <div key={wIndex}>
-                          <span className="font-semibold">{WAHANA[wIndex]}</span>
-                          <br/>
-                          <span className="text-yellow-300">{minutes}:{seconds}</span>
+                        <div key={group} className="bg-gray-700 rounded-md px-2 py-1 text-center">
+                          Group {group}
+                          <br />
+                          <span className="text-yellow-300">{m}:{s}</span>
                         </div>
                       );
                     })}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* ACTION BUTTON */}
-      <div className="flex justify-center gap-4 mt-8">
+      {/* ACTION */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
         <button
           onClick={downloadCSV}
-          className="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 font-bold"
+          className="px-6 py-3 rounded-xl bg-green-600 font-bold"
         >
           Unduh Data
         </button>
 
         <button
           onClick={resetAll}
-          className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 font-bold"
+          className="px-6 py-3 rounded-xl bg-red-600 font-bold"
         >
-          Reset Semua Batch & Group
+          Reset Semua
         </button>
       </div>
     </div>
