@@ -26,7 +26,11 @@ const WAHANA_NAME = {
 
 export default function Train() {
   const [allWahana, setAllWahana] = useState({});
+  const [liveTimers, setLiveTimers] = useState({});
 
+  /* =========================
+      REALTIME LISTENER
+  ========================== */
   useEffect(() => {
     const unsub = onValue(ref(db, "wahana"), (snap) => {
       setAllWahana(snap.val() || {});
@@ -34,14 +38,55 @@ export default function Train() {
     return () => unsub();
   }, []);
 
+  /* =========================
+      LIVE TIMER (KUNING)
+  ========================== */
+  useEffect(() => {
+    const intervals = {};
+
+    Object.keys(TRAINS).forEach((key) => {
+      const data = allWahana[key];
+      if (data?.step === 1 && data.startTime) {
+        intervals[key] = setInterval(() => {
+          const diff = Math.floor((Date.now() - data.startTime) / 1000);
+          setLiveTimers((prev) => ({
+            ...prev,
+            [key]: {
+              minutes: Math.floor(diff / 60),
+              seconds: diff % 60,
+            },
+          }));
+        }, 1000);
+      } else {
+        setLiveTimers((prev) => ({
+          ...prev,
+          [key]: { minutes: 0, seconds: 0 },
+        }));
+      }
+    });
+
+    return () => Object.values(intervals).forEach(clearInterval);
+  }, [allWahana]);
+
+  /* =========================
+      WARNA STATUS
+  ========================== */
   const getColor = (step) => {
-    if (step === 2) return "bg-blue-500";   // READY
-    if (step === 1) return "bg-yellow-400"; // PROSES
-    return "bg-gray-400";                  // IDLE
+    if (step === 2) return "bg-blue-500";
+    if (step === 1) return "bg-yellow-400";
+    return "bg-gray-400";
+  };
+
+  const calcDuration = (start) => {
+    const diff = Math.floor((Date.now() - start) / 1000);
+    return {
+      minutes: Math.floor(diff / 60),
+      seconds: diff % 60,
+    };
   };
 
   /* =========================
-      TOMBOL UTAMA (FIXED)
+      TOMBOL UTAMA
   ========================== */
   const handleClick = (key) => {
     const data = allWahana[key];
@@ -50,69 +95,52 @@ export default function Train() {
     let { batch, group, step, startTime = null } = data;
     const now = Date.now();
 
-    // 0️⃣ ABU → KUNING (START TIMER)
+    // IDLE → PROSES (START TIMER)
     if (step === 0) {
-      set(ref(db, `wahana/${key}`), {
-        ...data,
-        step: 1,
-        startTime: now,
-      });
-      return;
+      step = 1;
+      startTime = now;
     }
 
-    // 1️⃣ KUNING → BIRU (TIMER MASIH JALAN)
-    if (step === 1) {
-      set(ref(db, `wahana/${key}`), {
-        ...data,
-        step: 2,
-        // startTime tetap
-      });
-      return;
-    }
+    // PROSES → READY (STOP TIMER + SIMPAN LOG)
+    else if (step === 1) {
+      step = 2;
 
-    // 2️⃣ BIRU → ABU (STOP TIMER + SIMPAN LOG)
-    if (step === 2) {
       if (startTime) {
-        const diff = Math.floor((Date.now() - startTime) / 1000);
-
-        set(
-          ref(db, `logs/${key}/batch${batch}/group${group}`),
-          {
-            duration: {
-              minutes: Math.floor(diff / 60),
-              seconds: diff % 60,
-            },
-          }
-        );
+        const duration = calcDuration(startTime);
+        set(ref(db, `logs/${key}/batch${batch}/group${group}`), { duration });
       }
 
-      // NEXT GROUP
+      startTime = null;
+    }
+
+    // READY → IDLE (NEXT GROUP)
+    else if (step === 2) {
+      step = 0;
       group++;
       if (group > 3) {
         group = 1;
         batch++;
       }
-
-      set(ref(db, `wahana/${key}`), {
-        ...data,
-        batch,
-        group,
-        step: 0,
-        startTime: null,
-      });
     }
+
+    set(ref(db, `wahana/${key}`), {
+      batch,
+      group,
+      step,
+      startTime,
+    });
   };
 
   /* =========================
-      PREVIOUS GROUP
+      PREVIOUS
   ========================== */
   const previousGroup = (key) => {
     const data = allWahana[key];
     if (!data) return;
 
     let { batch, group } = data;
-
     group--;
+
     if (group < 1) {
       batch = Math.max(1, batch - 1);
       group = 3;
@@ -127,9 +155,6 @@ export default function Train() {
     });
   };
 
-  /* =========================
-      RESET SALAH KLIK
-  ========================== */
   const resetWrongClick = (key) => {
     const data = allWahana[key];
     if (!data) return;
@@ -151,15 +176,15 @@ export default function Train() {
         Monitor Train
       </h1>
 
-      {/* 🔵 8 PROGRES WAHANA */}
-      <div className="grid grid-cols-4 gap-x-10 gap-y-6 mb-14">
+      {/* 🔵 STATUS 8 WAHANA */}
+      <div className="grid grid-cols-4 gap-x-8 gap-y-6 mb-12">
         {[1,2,3,4,5,6,7,8].map((i) => {
           const data = allWahana[`wahana${i}`];
           return (
             <div key={i} className="flex flex-col items-center text-center">
               {data && (
                 <div className="text-xs text-yellow-400 font-semibold mb-1">
-                  Batch {data.batch} • Group {data.group}
+                  B{data.batch} • G{data.group}
                 </div>
               )}
               <div className={`w-10 h-10 rounded-full ${getColor(data?.step)}`} />
@@ -175,6 +200,8 @@ export default function Train() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl mx-auto">
         {Object.keys(TRAINS).map((key) => {
           const data = allWahana[key];
+          const time = liveTimers[key] || { minutes: 0, seconds: 0 };
+
           return (
             <div key={key} className="bg-gray-800 rounded-xl p-6 text-center">
 
@@ -188,11 +215,18 @@ export default function Train() {
                 </p>
               )}
 
-              {/* 🔘 TOMBOL UTAMA */}
+              {/* 🔘 TOMBOL UTAMA + LIVE TIMER */}
               <button
                 onClick={() => handleClick(key)}
-                className={`w-24 h-24 rounded-full mx-auto mb-6 ${getColor(data?.step)}`}
-              />
+                className={`w-28 h-28 rounded-full mx-auto mb-6 flex items-center justify-center font-bold ${getColor(data?.step)}`}
+              >
+                {data?.step === 1 && (
+                  <span className="text-black text-lg">
+                    {String(time.minutes).padStart(2,"0")}:
+                    {String(time.seconds).padStart(2,"0")}
+                  </span>
+                )}
+              </button>
 
               <div className="flex justify-center gap-4">
                 <button
@@ -204,9 +238,9 @@ export default function Train() {
 
                 <button
                   onClick={() => resetWrongClick(key)}
-                  className="px-4 py-2 h-10 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-bold"
+                  className="px-4 py-2 h-10 bg-red-600 rounded-lg text-sm font-bold"
                 >
-                  Reset Salah Klik
+                  Reset
                 </button>
               </div>
 

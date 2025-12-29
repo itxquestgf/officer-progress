@@ -31,6 +31,8 @@ export default function Officer() {
   const key = `wahana${id}`;
 
   const [allWahana, setAllWahana] = useState({});
+  const [liveTime, setLiveTime] = useState({ minutes: 0, seconds: 0 });
+
   const myData = allWahana[key];
 
   /* =========================
@@ -44,109 +46,96 @@ export default function Officer() {
   }, []);
 
   /* =========================
+      LIVE TIMER (KUNING)
+  ========================== */
+  useEffect(() => {
+    let timer;
+
+    if (myData?.step === 1 && myData.startTime) {
+      timer = setInterval(() => {
+        const diff = Math.floor((Date.now() - myData.startTime) / 1000);
+        setLiveTime({
+          minutes: Math.floor(diff / 60),
+          seconds: diff % 60,
+        });
+      }, 1000);
+    } else {
+      setLiveTime({ minutes: 0, seconds: 0 });
+    }
+
+    return () => clearInterval(timer);
+  }, [myData?.step, myData?.startTime]);
+
+  /* =========================
       WARNA STATUS
   ========================== */
   const getColor = (step) => {
-    if (step === 2) return "bg-blue-500";   // READY
-    if (step === 1) return "bg-yellow-400"; // PROSES
-    return "bg-gray-400";                  // IDLE
+    if (step === 2) return "bg-blue-500";
+    if (step === 1) return "bg-yellow-400";
+    return "bg-gray-400";
   };
 
-  /* =========================
-      STOP & SIMPAN TIMER
-  ========================== */
-  const stopAndSave = (batch, group, startTime) => {
-    if (!startTime) return;
-
-    const diff = Math.floor((Date.now() - startTime) / 1000);
-
-    set(
-      ref(db, `logs/${key}/batch${batch}/group${group}`),
-      {
-        duration: {
-          minutes: Math.floor(diff / 60),
-          seconds: diff % 60,
-        },
-      }
-    );
+  const calcDuration = (start) => {
+    const diff = Math.floor((Date.now() - start) / 1000);
+    return {
+      minutes: Math.floor(diff / 60),
+      seconds: diff % 60,
+    };
   };
 
   /* =========================
       TOMBOL UTAMA
   ========================== */
   const handleClick = () => {
-  if (!myData) return;
+    if (!myData) return;
 
-  let { batch, group, step, startTime = null } = myData;
-  const now = Date.now();
+    let { batch, group, step, startTime = null } = myData;
+    const now = Date.now();
 
-  // 0️⃣ ABU → KUNING (START TIMER)
-  if (step === 0) {
-    set(ref(db, `wahana/${key}`), {
-      ...myData,
-      step: 1,
-      startTime: now,
-    });
-    return;
-  }
-
-  // 1️⃣ KUNING → BIRU (TIMER MASIH JALAN)
-  if (step === 1) {
-    set(ref(db, `wahana/${key}`), {
-      ...myData,
-      step: 2,
-      // startTime TETAP
-    });
-    return;
-  }
-
-  // 2️⃣ BIRU → ABU (STOP TIMER + SIMPAN)
-  if (step === 2) {
-    if (startTime) {
-      const diff = Math.floor((Date.now() - startTime) / 1000);
-
-      set(
-        ref(db, `logs/${key}/batch${batch}/group${group}`),
-        {
-          duration: {
-            minutes: Math.floor(diff / 60),
-            seconds: diff % 60,
-          },
-        }
-      );
+    // IDLE → PROSES (START TIMER)
+    if (step === 0) {
+      step = 1;
+      startTime = now;
     }
 
-    // NEXT GROUP
-    group++;
-    if (group > 3) {
-      group = 1;
-      batch++;
+    // PROSES → READY (STOP TIMER + SIMPAN LOG)
+    else if (step === 1) {
+      step = 2;
+
+      if (startTime) {
+        const duration = calcDuration(startTime);
+        set(ref(db, `logs/${key}/batch${batch}/group${group}`), { duration });
+      }
+
+      startTime = null;
+    }
+
+    // READY → IDLE (NEXT GROUP)
+    else if (step === 2) {
+      step = 0;
+      group++;
+
+      if (group > 3) {
+        group = 1;
+        batch++;
+      }
     }
 
     set(ref(db, `wahana/${key}`), {
-      ...myData,
       batch,
       group,
-      step: 0,
-      startTime: null,
+      step,
+      startTime,
     });
-  }
-};
-
-
+  };
 
   /* =========================
-      PREVIOUS GROUP
+      PREVIOUS
   ========================== */
   const previousGroup = () => {
     if (!myData) return;
 
-    let { batch, group, step, startTime } = myData;
-
-    // STOP jika masih PROSES
-    if (step === 1) {
-      stopAndSave(batch, group, startTime);
-    }
+    let { batch, group } = myData;
 
     group--;
     if (group < 1) {
@@ -163,16 +152,8 @@ export default function Officer() {
     });
   };
 
-  /* =========================
-      RESET SALAH KLIK
-  ========================== */
   const resetWrongClick = () => {
     if (!myData) return;
-
-    // STOP jika masih PROSES
-    if (myData.step === 1) {
-      stopAndSave(myData.batch, myData.group, myData.startTime);
-    }
 
     set(ref(db, `wahana/${key}`), {
       ...myData,
@@ -187,12 +168,8 @@ export default function Officer() {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center px-4">
 
-      {/* NAMA WAHANA */}
-      <h1 className="text-2xl font-bold mb-1">
-        {WAHANA[id]}
-      </h1>
+      <h1 className="text-2xl font-bold mb-1">{WAHANA[id]}</h1>
 
-      {/* BATCH & GROUP */}
       {myData && (
         <p className="text-sm text-yellow-400 mb-8">
           Batch {myData.batch} • Group {myData.group}
@@ -207,25 +184,29 @@ export default function Officer() {
             <div key={i} className="flex flex-col items-center text-center">
               {data && (
                 <div className="text-xs font-semibold text-yellow-400 mb-1">
-                  Batch {data.batch} • Group {data.group}
+                  B{data.batch} • G{data.group}
                 </div>
               )}
               <div className={`w-10 h-10 rounded-full ${getColor(data?.step)}`} />
-              <span className="text-[13px] mt-1 opacity-80">
-                {WAHANA[i]}
-              </span>
+              <span className="text-[13px] mt-1 opacity-80">{WAHANA[i]}</span>
             </div>
           );
         })}
       </div>
 
-      {/* 🔘 TOMBOL UTAMA */}
+      {/* 🔘 TOMBOL UTAMA + LIVE TIMER */}
       <button
         onClick={handleClick}
-        className={`w-24 h-24 rounded-full mb-8 ${getColor(myData?.step)}`}
-      />
+        className={`w-28 h-28 rounded-full mb-8 flex flex-col items-center justify-center font-bold ${getColor(myData?.step)}`}
+      >
+        {myData?.step === 1 && (
+          <span className="text-black text-lg">
+            {String(liveTime.minutes).padStart(2,"0")}:
+            {String(liveTime.seconds).padStart(2,"0")}
+          </span>
+        )}
+      </button>
 
-      {/* 🔁 PREV & RESET */}
       <div className="flex gap-4 mb-6">
         <button
           onClick={previousGroup}
@@ -236,15 +217,15 @@ export default function Officer() {
 
         <button
           onClick={resetWrongClick}
-          className="px-6 py-2 h-10 rounded-lg bg-red-600 hover:bg-red-700 text-sm font-bold"
+          className="px-6 py-2 h-10 rounded-lg bg-red-600 text-sm font-bold"
         >
           Reset Salah Klik
         </button>
       </div>
 
       <p className="mt-6 text-xs opacity-60 text-center">
-        Salah klik? tenang.<br />
-        Previous atau Reset aman 👍
+        Kuning = timer berjalan<br />
+        Biru = selesai • Abu = idle
       </p>
     </div>
   );
