@@ -1,7 +1,12 @@
 import { ref, onValue, update, set } from "firebase/database";
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
-import { SettingsIcon, ResetIcon, ClockIcon, AlertIcon } from "../components/Icons";
+import {
+  SettingsIcon,
+  ResetIcon,
+  ClockIcon,
+  AlertIcon,
+} from "../components/Icons";
 
 const WAHANA_LIST = {
   wahana1: "Hologram",
@@ -45,16 +50,15 @@ export default function Developer() {
   };
 
   /* =========================
-      RESET SALAH KLIK
+      HAPUS DATA BATCH & GROUP
   ========================== */
-  const resetWrongClick = () => {
+  const deleteBatchGroup = () => {
     const data = allWahana[selected];
     if (!data) return;
 
-    set(ref(db, `wahana/${selected}`), {
-      ...data,
-      step: 0,
-      startTime: null,
+    // Hapus data batch & group yang dipilih
+    update(ref(db, `wahana/${selected}/batch${batch}/group${group}`), {
+      duration: null, // Menghapus data waktu
     });
   };
 
@@ -63,10 +67,7 @@ export default function Developer() {
   ========================== */
   const setManualTime = () => {
     update(
-      ref(
-        db,
-        `logs/${selected}/batch${batch}/group${group}/duration`
-      ),
+      ref(db, `logs/${selected}/batch${batch}/group${group}/duration`),
       {
         minutes: Number(minutes),
         seconds: Number(seconds),
@@ -75,8 +76,7 @@ export default function Developer() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white px-4 md:px-6 py-6 md:py-10 safe-top safe-bottom">
-      
+    <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 text-white px-4 md:px-6 py-6 md:py-10 safe-top safe-bottom">
       {/* Header */}
       <div className="text-center mb-8 md:mb-10 fade-in">
         <div className="flex items-center justify-center gap-3 mb-2">
@@ -91,7 +91,6 @@ export default function Developer() {
       </div>
 
       <div className="max-w-2xl mx-auto bg-gray-800/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 lg:p-10 space-y-6 md:space-y-8 shadow-2xl border border-gray-700/50 scale-in">
-
         {/* PILIH WAHANA */}
         <div className="fade-in-delay-2">
           <label className="flex items-center gap-2 text-sm md:text-base font-semibold mb-2 text-gray-300">
@@ -149,13 +148,13 @@ export default function Developer() {
           <span>SET POSISI</span>
         </button>
 
-        {/* RESET */}
+        {/* HAPUS DATA */}
         <button
-          onClick={resetWrongClick}
+          onClick={deleteBatchGroup}
           className="w-full py-3 md:py-4 rounded-xl bg-red-600 hover:bg-red-700 font-bold text-base md:text-lg transition-all duration-300 shadow-lg active:scale-95 hover:scale-105 flex items-center justify-center gap-2 group"
         >
           <ResetIcon className="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" />
-          <span>RESET SALAH KLIK</span>
+          <span>HAPUS DATA</span>
         </button>
 
         {/* SET WAKTU */}

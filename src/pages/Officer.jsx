@@ -2,17 +2,7 @@ import { useParams } from "react-router-dom";
 import { ref, onValue, set } from "firebase/database";
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
-import {
-  PlayIcon,
-  PauseIcon,
-  StopIcon,
-  ClockIcon,
-  ResetIcon,
-  ArrowLeftIcon,
-  StatusActiveIcon,
-  StatusIdleIcon,
-  StatusReadyIcon,
-} from "../components/Icons";
+import { PlayIcon, PauseIcon, StopIcon, ClockIcon, StatusActiveIcon, StatusIdleIcon, StatusReadyIcon } from "../components/Icons";
 
 /**
  * INDEX:
@@ -217,7 +207,7 @@ export default function Officer() {
 
       {/* STATUS 8 WAHANA */}
       <div className="grid grid-cols-4 gap-4 mb-10">
-        {[1,2,3,4,5,6,7,8].map((i) => {
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => {
           const data = allWahana[`wahana${i}`];
           return (
             <div key={i} className="flex flex-col items-center text-center">
@@ -247,8 +237,8 @@ export default function Officer() {
             <div className="flex flex-col items-center gap-1">
               <ClockIcon className={`w-6 h-6 ${myData.step === 2 ? "text-white" : "text-black"}`} />
               <span className={`text-2xl font-mono font-bold ${myData.step === 2 ? "text-white" : "text-black"}`}>
-                {String(liveTime.minutes).padStart(2,"0")}:
-                {String(liveTime.seconds).padStart(2,"0")}
+                {String(liveTime.minutes).padStart(2, "0")}:
+                {String(liveTime.seconds).padStart(2, "0")}
               </span>
             </div>
           ) : (
@@ -264,27 +254,24 @@ export default function Officer() {
         )}
       </div>
 
-      {/* ACTION BUTTONS */}
-      <div className="flex gap-3 w-full max-w-sm">
-        <button
-          onClick={previousGroup}
-          className="flex-1 py-3 bg-gray-600 rounded-lg font-bold"
+      {/* WA BUTTON */}
+      <div className="flex justify-center mt-6 w-full max-w-sm">
+        <a
+          href="https://wa.me/1234567890" // Replace with the developer's number
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 py-3 rounded-full bg-gradient-to-r from-green-500 to-teal-500 text-white font-bold text-sm md:text-lg text-center shadow-lg transform transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-xl hover:bg-green-600 flex items-center justify-center gap-2 ease-in-out"
         >
-          <ArrowLeftIcon className="inline w-4 h-4 mr-1" />
-          Previous
-        </button>
-
-        <button
-          onClick={resetWrongClick}
-          className="flex-1 py-3 bg-red-600 rounded-lg font-bold"
-        >
-          <ResetIcon className="inline w-4 h-4 mr-1" />
-          Reset
-        </button>
+          <span className="flex items-center justify-center gap-2">
+            <i className="fab fa-whatsapp text-2xl"></i>
+            <span>WA Developer</span>
+          </span>
+        </a>
       </div>
 
+
       <p className="text-xs opacity-60 mt-6 text-center">
-        Kuning & Biru = timer berjalan<br/>
+        Kuning & Biru = timer berjalan<br />
         Abu = timer berhenti
       </p>
     </div>
