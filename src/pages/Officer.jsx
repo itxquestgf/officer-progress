@@ -260,7 +260,7 @@ export default function Officer() {
           href="https://wa.me/1234567890" // Replace with the developer's number
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 py-3 rounded-full bg-gradient-to-r from-green-500 to-teal-500 text-white font-bold text-sm md:text-lg text-center shadow-lg transform transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-xl hover:bg-green-600 flex items-center justify-center gap-2 ease-in-out"
+          className="flex-1 py-3 rounded-full bg-linear-to-r from-green-500 to-teal-500 text-white font-bold text-sm md:text-lg text-center shadow-lg transform transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-xl hover:bg-green-600 flex items-center justify-center gap-2 ease-in-out"
         >
           <span className="flex items-center justify-center gap-2">
             <i className="fab fa-whatsapp text-2xl"></i>

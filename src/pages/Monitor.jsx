@@ -54,9 +54,9 @@ export default function Monitor() {
   }, []);
 
   const getColor = (step) => {
-    if (step === 2) return "bg-blue-500";
-    if (step === 1) return "bg-yellow-400";
-    return "bg-gray-400";
+    if (step === 2) return "bg-blue-500";   // READY
+    if (step === 1) return "bg-yellow-400"; // PROSES
+    return "bg-gray-400";                  // IDLE
   };
 
   /* =========================
