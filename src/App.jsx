@@ -25,7 +25,7 @@ export default function App() {
   // Halaman yang dilindungi harus memeriksa status autentikasi
   const ProtectedRoute = ({ element }) => {
     if (loading) return <div>Loading...</div>; // Loading state while checking auth
-    return user ? element : <Navigate to="/login" />; // Redirect to login if user is not authenticated
+    return user ? element : <Navigate to="/login" />; 
   };
 
   return (
