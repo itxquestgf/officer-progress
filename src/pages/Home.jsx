@@ -13,7 +13,7 @@ const wahanaCards = [
   { id: 4, name: "Space-X", path: "/officer/4", icon: "🚀" },
   { id: 6, name: "Tunel", path: "/officer/6", icon: "📖" },
   { id: 7, name: "Chamber AI", path: "/officer/7", icon: "🖼️" },
-  { id: 8, name: "Gondola", path: "/officer/8", icon: "🚢" },
+  { id: 8, name: "B.Gondola & Gondola", path: "/officer/8", icon: "🚢" },
 ];
 
 export default function Home() {

@@ -12,8 +12,8 @@ const WAHANA = {
   4: "Space-X",
   5: "Train 2",
   6: "Tunel",
-  7: "Chamber AI & B.Gondola",
-  8: "Gondola",
+  7: "Chamber AI",
+  8: "B.Gondola & Gondola",
 };
 
 // TARGET MENIT
@@ -24,8 +24,8 @@ const TARGET_MINUTES = {
   4: 14, // Space-X
   5: 4,  // Train 2
   6: 15, // Tunel
-  7: 5,  // Chamber AI & B.Gondola
-  8: 10, // Gondola
+  7: 3,  // Chamber AI & B.Gondola
+  8: 13, // Gondola
 };
 
 export default function Monitor() {

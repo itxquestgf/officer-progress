@@ -32,8 +32,8 @@ const WAHANA_NAME = {
   4: "Space-X",
   5: "Train 2",
   6: "Tunel",
-  7: "Chamber AI & B.Gondola",
-  8: "Gondola",
+  7: "Chamber AI",
+  8: "B.Gondola & Gondola",
 };
 
 export default function Train() {

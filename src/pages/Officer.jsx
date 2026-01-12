@@ -4,18 +4,6 @@ import { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { PlayIcon, PauseIcon, StopIcon, ClockIcon, StatusActiveIcon, StatusIdleIcon, StatusReadyIcon } from "../components/Icons";
 
-/**
- * INDEX:
- * 1 = Hologram
- * 2 = Train 1
- * 3 = Dream Farm
- * 4 = Space-X
- * 5 = Train 2
- * 6 = Tunel
- * 7 = Chamber AI & B.Gondola
- * 8 = Gondola
- */
-
 const WAHANA = {
   1: "Hologram",
   2: "Train 1",
@@ -23,8 +11,8 @@ const WAHANA = {
   4: "Space-X",
   5: "Train 2",
   6: "Tunel",
-  7: "Chamber AI & B.Gondola",
-  8: "Gondola",
+  7: "Chamber AI",
+  8: "B.Gondola & Gondola",
 };
 
 export default function Officer() {
