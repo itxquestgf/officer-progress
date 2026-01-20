@@ -8,6 +8,8 @@ import Train from "./pages/Train";
 import Monitor from "./pages/Monitor";
 import Developer from "./pages/Developer";
 import Login from "./pages/Login";
+import Tunel from "./pages/Tunel";
+
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -33,10 +35,12 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/officer/:id" element={<ProtectedRoute element={<Officer />} />} />
+<Route path="/officer/tunel" element={<ProtectedRoute element={<Tunel />} />} />
         <Route path="/officer/train" element={<ProtectedRoute element={<Train />} />} />
+        <Route path="/officer/:id" element={<ProtectedRoute element={<Officer />} />} />
         <Route path="/monitor" element={<ProtectedRoute element={<Monitor />} />} />
         <Route path="/developer" element={<ProtectedRoute element={<Developer />} />} />
+
       </Routes>
     </BrowserRouter>
   );
