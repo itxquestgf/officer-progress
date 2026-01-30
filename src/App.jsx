@@ -9,6 +9,7 @@ import Monitor from "./pages/Monitor";
 import Developer from "./pages/Developer";
 import Login from "./pages/Login";
 import Tunel from "./pages/Tunel";
+import NetworkStatus from "./pages/NetworkStatus";
 
 
 export default function App() {
@@ -32,6 +33,8 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <>
+        <NetworkStatus />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -40,8 +43,8 @@ export default function App() {
         <Route path="/officer/:id" element={<ProtectedRoute element={<Officer />} />} />
         <Route path="/monitor" element={<ProtectedRoute element={<Monitor />} />} />
         <Route path="/developer" element={<ProtectedRoute element={<Developer />} />} />
-
       </Routes>
+      </>
     </BrowserRouter>
   );
 }

@@ -21,6 +21,8 @@ export default function Officer() {
 
   const [allWahana, setAllWahana] = useState({});
   const [liveTime, setLiveTime] = useState({ minutes: 0, seconds: 0 });
+  const [maintenanceStart, setMaintenanceStart] = useState(null);
+  const [isMaintenance, setIsMaintenance] = useState(false);
 
   const myData = allWahana[key];
 
@@ -176,6 +178,54 @@ export default function Officer() {
     return <StopIcon className="w-14 h-14 text-white" />;
   };
 
+    /* =========================
+    MAINTANCE
+  ========================== */
+
+
+const calcMaintenanceDuration = (start) => {
+  const diff = Math.floor((Date.now() - start) / 1000);
+  return {
+    minutes: Math.floor(diff / 60),
+    seconds: diff % 60,
+  };
+};
+
+const handleMaintenance = () => {
+  if (!myData) return;
+
+  const now = Date.now();
+
+  // START MAINTENANCE
+  if (!isMaintenance) {
+    setIsMaintenance(true);
+    setMaintenanceStart(now);
+
+    set(ref(db, `wahana/${key}`), {
+      ...myData,
+      maintenance: true,
+    });
+  }
+
+  // STOP MAINTENANCE
+  else {
+    const duration = calcDuration(maintenanceStart);
+
+    set(ref(db, `maintenance/${key}/batch${myData.batch}/group${myData.group}`), {
+      duration,
+    });
+
+    setIsMaintenance(false);
+    setMaintenanceStart(null);
+
+    set(ref(db, `wahana/${key}`), {
+      ...myData,
+      maintenance: false,
+    });
+  }
+};
+
+
   /* =========================
       UI
   ========================== */
@@ -204,9 +254,14 @@ export default function Officer() {
                   B{data.batch} • G{data.group}
                 </div>
               )}
-              <div className={`w-10 h-10 rounded-full ${getColor(data?.step)} flex items-center justify-center`}>
-                {getStatusIcon(data?.step)}
-              </div>
+              <div
+  className={`w-10 h-10 rounded-full ${getColor(data?.step)}
+  flex items-center justify-center
+  ${data?.maintenance ? "ring-2 ring-red-500" : ""}`}
+>
+  {getStatusIcon(data?.step)}
+</div>
+
               <span className="text-[11px] mt-1 opacity-80">
                 {WAHANA[i]}
               </span>
@@ -216,31 +271,38 @@ export default function Officer() {
       </div>
 
       {/* MAIN BUTTON */}
-      <div className="relative mb-8">
-        <button
-          onClick={handleClick}
-          className={`w-36 h-36 rounded-full flex items-center justify-center shadow-xl transition active:scale-95 ${getColor(myData?.step)}`}
-        >
-          {(myData?.step === 1 || myData?.step === 2) ? (
-            <div className="flex flex-col items-center gap-1">
-              <ClockIcon className={`w-6 h-6 ${myData.step === 2 ? "text-white" : "text-black"}`} />
-              <span className={`text-2xl font-mono font-bold ${myData.step === 2 ? "text-white" : "text-black"}`}>
-                {String(liveTime.minutes).padStart(2, "0")}:
-                {String(liveTime.seconds).padStart(2, "0")}
-              </span>
-            </div>
-          ) : (
-            getMainIcon()
-          )}
-        </button>
+      <div className="flex gap-6 items-center mb-8">
 
-        {/* GLOW (FIX: tidak blok klik) */}
-        {(myData?.step === 1 || myData?.step === 2) && (
-          <div
-            className={`absolute inset-0 rounded-full ${getColor(myData?.step)} opacity-30 blur-xl animate-ping pointer-events-none`}
-          />
-        )}
-      </div>
+  {/* MAIN BUTTON */}
+  <div className="relative">
+    <button
+      onClick={handleClick}
+      className={`w-36 h-36 rounded-full flex items-center justify-center shadow-xl transition active:scale-95 ${getColor(myData?.step)}`}
+    >
+      {(myData?.step === 1 || myData?.step === 2) ? (
+        <div className="flex flex-col items-center gap-1">
+          <ClockIcon className={`w-6 h-6 ${myData.step === 2 ? "text-white" : "text-black"}`} />
+          <span className={`text-2xl font-mono font-bold ${myData.step === 2 ? "text-white" : "text-black"}`}>
+            {String(liveTime.minutes).padStart(2, "0")}:
+            {String(liveTime.seconds).padStart(2, "0")}
+          </span>
+        </div>
+      ) : (
+        getMainIcon()
+      )}
+    </button>
+  </div>
+
+  {/* MAINTENANCE BUTTON */}
+  <button
+    onClick={handleMaintenance}
+    className={`w-24 h-24 rounded-full flex items-center justify-center font-bold text-sm shadow-xl
+      ${isMaintenance ? "bg-red-700 animate-pulse" : "bg-gray-700"}`}
+  >
+    MAINT
+  </button>
+</div>
+
 
       {/* WA BUTTON */}
       <div className="flex justify-center mt-6 w-full max-w-sm">

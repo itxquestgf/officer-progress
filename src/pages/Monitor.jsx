@@ -2,7 +2,7 @@ import { ref, onValue, update, remove } from "firebase/database";
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { MonitorIcon, DownloadIcon, ResetIcon, ClockIcon, StatusActiveIcon, StatusIdleIcon, StatusReadyIcon } from "../components/Icons";
-import { useNavigate } from "react-router-dom"; // Tambahkan import useNavigate
+import { useNavigate } from "react-router-dom";
 
 // NAMA WAHANA
 const WAHANA = {
@@ -32,7 +32,17 @@ export default function Monitor() {
   const [logs, setLogs] = useState({});
   const [wahana, setWahana] = useState({});
   const [user, setUser] = useState(null);
-  const navigate = useNavigate(); // Inisialisasi useNavigate
+  const navigate = useNavigate();
+  const [maintenance, setmaintenance] = useState({});
+
+  useEffect(() => {
+  onValue(ref(db, "maintenance"), (snap) => {
+    const data = snap.val() || {};
+    console.log("Maintenance data:", data); // Log data untuk pemeriksaan
+    setmaintenance(data);
+  });
+}, []);
+
 
   useEffect(() => {
     onValue(ref(db, "logs"), (snap) => {
@@ -64,12 +74,14 @@ export default function Monitor() {
     }
     update(ref(db), updates);
     remove(ref(db, "logs"));
+    remove(ref(db, "maintenance"));
   };
 
   // DOWNLOAD CSV
   const downloadCSV = () => {
     let csv = "Wahana,Batch,Group,Menit,Detik\n";
 
+    // Log Wahana
     Object.keys(logs).forEach((wahanaKey) => {
       const idx = wahanaKey.replace("wahana", "");
       const name = WAHANA[idx];
@@ -78,7 +90,23 @@ export default function Monitor() {
         Object.keys(logs[wahanaKey][batchKey] || {}).forEach((groupKey) => {
           const d = logs[wahanaKey][batchKey][groupKey]?.duration;
           if (d) {
-            csv += `${name},${batchKey.replace("batch","")},${groupKey.replace("group","")},${d.minutes},${d.seconds}\n`;
+            csv += `${name},${batchKey.replace("batch", "")},${groupKey.replace("group", "")},${d.minutes},${d.seconds}\n`;
+          }
+        });
+      });
+    });
+
+    // Log Maintenance
+    Object.keys(maintenance).forEach((wahanaKey) => {
+      const name = WAHANA[wahanaKey.replace("wahana", "")];
+
+      Object.keys(maintenance[wahanaKey] || {}).forEach((batchKey) => {
+        Object.keys(maintenance[wahanaKey][batchKey] || {}).forEach((groupKey) => {
+          const d = maintenance[wahanaKey][batchKey][groupKey]?.duration;
+          const maintenanceStart = maintenance[wahanaKey][batchKey][groupKey]?.maintenanceStart;
+          const maintenanceEnd = maintenance[wahanaKey][batchKey][groupKey]?.maintenanceEnd;
+          if (d) {
+            csv += `${name} (Maintenance),${batchKey.replace("batch", "")},${groupKey.replace("group", "")},${maintenanceStart}-${maintenanceEnd},${d.minutes},${d.seconds}\n`;
           }
         });
       });
@@ -121,7 +149,7 @@ export default function Monitor() {
 
       {/* STATUS BULATAN */}
       <div className="grid grid-cols-4 md:grid-cols-8 gap-4 mb-10">
-        {[1,2,3,4,5,6,7,8].map((i) => {
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => {
           const data = wahana[`wahana${i}`];
           return (
             <div key={i} className="flex flex-col items-center text-center">
@@ -141,7 +169,7 @@ export default function Monitor() {
 
       {/* LIST TIMING */}
       <div className="space-y-6 mb-10">
-        {[1,2,3,4,5,6,7,8].map((i) => {
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => {
           const wahanaLogs = logs[`wahana${i}`] || {};
           return (
             <div key={i} className="bg-gray-800 rounded-xl p-4">
@@ -150,14 +178,14 @@ export default function Monitor() {
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                {[1,2,3,4,5].map((batch) => (
+                {[1, 2, 3, 4, 5].map((batch) => (
                   <div key={batch} className="bg-gray-700 rounded-lg p-3">
                     <div className="text-blue-400 font-semibold mb-2">
                       Batch {batch}
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 text-xs">
-                      {[1,2,3].map((group) => {
+                      {[1, 2, 3].map((group) => {
                         const d = wahanaLogs?.[`batch${batch}`]?.[`group${group}`]?.duration;
                         const m = d?.minutes;
                         const s = d?.seconds;
@@ -176,8 +204,8 @@ export default function Monitor() {
 
                                 {/* AKTUAL */}
                                 <span className="text-yellow-300">
-                                  {String(m).padStart(2,"0")}:
-                                  {String(s).padStart(2,"0")}
+                                  {String(m).padStart(2, "0")}:
+                                  {String(s).padStart(2, "0")}
                                 </span>
 
                                 {/* LEBIH LAMA */}
@@ -199,6 +227,50 @@ export default function Monitor() {
           );
         })}
       </div>
+
+      {/* maintenance LOG */}
+      <div className="space-y-6 mt-12">
+  <h2 className="text-xl font-bold text-red-400 text-center">
+    maintenance Log
+  </h2>
+
+  {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => {
+    const m = maintenance[`wahana${i}`];
+    if (!m || Object.keys(m).length === 0) return null; // Cek apakah ada data
+
+    return (
+      <div key={i} className="bg-gray-800 rounded-xl p-4">
+        <h3 className="text-red-400 font-bold mb-3">
+          {WAHANA[i]}
+        </h3>
+
+        {Object.keys(m).map((batchKey) => (
+          <div key={batchKey} className="mb-3">
+            <div className="text-sm text-gray-300 mb-1">
+              {batchKey}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              {Object.keys(m[batchKey]).map((groupKey) => {
+                const d = m[batchKey][groupKey]?.duration;
+                return (
+                  <div key={groupKey} className="bg-gray-700 p-2 rounded-md text-center">
+                    <div className="text-gray-400 mb-1">{groupKey}</div>
+                    <div className="font-mono text-red-300">
+                      {String(d?.minutes).padStart(2, "0")}:
+                      {String(d?.seconds).padStart(2, "0")}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  })}
+</div>
+
 
       {/* ACTION */}
       <div className="flex gap-4 max-w-md mx-auto">

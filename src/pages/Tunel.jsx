@@ -4,8 +4,6 @@ import { db } from "../firebase";
 import {
   PlayIcon,
   ClockIcon,
-  ResetIcon,
-  ArrowLeftIcon,
   StatusActiveIcon,
   StatusIdleIcon,
   StatusReadyIcon,
@@ -100,7 +98,7 @@ export default function Tunel() {
 
   /* =========================
       MAIN BUTTON FLOW
-      Abu → Kuning → Biru → Abu
+      (MAINTENANCE DIABAIKAN)
   ========================== */
   const handleClick = (key) => {
     const data = allWahana[key];
@@ -112,11 +110,9 @@ export default function Tunel() {
     if (step === 0) {
       step = 1;
       startTime = now;
-    } 
-    else if (step === 1) {
+    } else if (step === 1) {
       step = 2;
-    } 
-    else if (step === 2) {
+    } else if (step === 2) {
       if (startTime) {
         const duration = calcDuration(startTime);
         set(ref(db, `logs/${key}/batch${batch}/group${group}`), { duration });
@@ -133,6 +129,7 @@ export default function Tunel() {
     }
 
     set(ref(db, `wahana/${key}`), {
+      ...data,
       batch,
       group,
       step,
@@ -141,39 +138,52 @@ export default function Tunel() {
   };
 
   /* =========================
-      PREVIOUS & RESET
+      MAINTENANCE (SAMA TRAIN)
   ========================== */
-  const previousGroup = (key) => {
-    const data = allWahana[key];
-    if (!data) return;
+const handleMaintenance = (key) => {
+  const data = allWahana[key];
+  if (!data) return;
 
-    let { batch, group } = data;
-    group--;
+  const now = Date.now();
+  const startTime = new Date(now).toLocaleString(); // Menggunakan waktu lokal sebagai waktu mulai
 
-    if (group < 1) {
-      batch = Math.max(1, batch - 1);
-      group = 3;
-    }
+  // START
+  if (!data.maintenance) {
+    set(ref(db, `wahana/${key}`), {
+      ...data,
+      maintenance: true,
+      maintenanceStart: now,
+    });
+  }
+  // STOP
+  else {
+    const maintenanceStart = data.maintenanceStart;
+    const maintenanceEnd = now;
+
+    // Menghitung durasi dalam detik
+    const durationInSeconds = Math.floor((maintenanceEnd - maintenanceStart) / 1000);
+    const hours = Math.floor(durationInSeconds / 3600);
+    const minutes = Math.floor((durationInSeconds % 3600) / 60);
+    const seconds = durationInSeconds % 60;
+
+    const duration = `${hours}-${minutes}-${seconds}`; // Format jam-menit-detik
+
+    const maintenanceKey = `${startTime}-${new Date(maintenanceEnd).toLocaleString()}`;
+
+    set(ref(db, `maintenance/${maintenanceKey}`), {
+      maintenanceStart: startTime,
+      maintenanceEnd: new Date(maintenanceEnd).toLocaleString(),
+      duration: duration, // Waktu perbaikan
+    });
 
     set(ref(db, `wahana/${key}`), {
       ...data,
-      batch,
-      group,
-      step: 0,
-      startTime: null,
+      maintenance: false,
+      maintenanceStart: null,
     });
-  };
+  }
+};
 
-  const resetWrongClick = (key) => {
-    const data = allWahana[key];
-    if (!data) return;
-
-    set(ref(db, `wahana/${key}`), {
-      ...data,
-      step: 0,
-      startTime: null,
-    });
-  };
 
   /* =========================
       STATUS ICON
@@ -214,7 +224,8 @@ export default function Tunel() {
 
               <div
                 className={`w-10 h-10 rounded-full ${getColor(data?.step)}
-                flex items-center justify-center`}
+                flex items-center justify-center
+                ${data?.maintenance ? "ring-2 ring-red-500" : ""}`}
               >
                 {getStatusIcon(data?.step)}
               </div>
@@ -249,7 +260,7 @@ export default function Tunel() {
               {/* MAIN BUTTON */}
               <button
                 onClick={() => handleClick(key)}
-                className={`w-32 h-32 rounded-full mx-auto mb-6
+                className={`w-32 h-32 rounded-full mx-auto mb-4
                 flex items-center justify-center shadow-xl
                 ${getColor(data?.step)}`}
               >
@@ -274,23 +285,14 @@ export default function Tunel() {
                 )}
               </button>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => previousGroup(key)}
-                  className="flex-1 py-2 bg-gray-600 rounded-lg font-bold"
-                >
-                  <ArrowLeftIcon className="inline w-4 h-4 mr-1" />
-                  Previous
-                </button>
-
-                <button
-                  onClick={() => resetWrongClick(key)}
-                  className="flex-1 py-2 bg-red-600 rounded-lg font-bold"
-                >
-                  <ResetIcon className="inline w-4 h-4 mr-1" />
-                  Reset
-                </button>
-              </div>
+              {/* MAINTENANCE BUTTON */}
+              <button
+                onClick={() => handleMaintenance(key)}
+                className={`w-full py-2 rounded-lg font-bold
+                ${data?.maintenance ? "bg-red-700 animate-pulse" : "bg-gray-700"}`}
+              >
+                {data?.maintenance ? "STOP MAINTENANCE" : "MAINTENANCE"}
+              </button>
 
             </div>
           );

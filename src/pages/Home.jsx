@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../firebase"; // Import auth dari firebase.js
 import { useNavigate } from "react-router-dom";
+import { MdOutlineExitToApp } from "react-icons/md";
 
 const wahanaCards = [
   { id: 1, name: "Hologram", path: "/officer/1", icon: "🤖" },
@@ -63,9 +64,9 @@ export default function Home() {
       {user && (
         <button
           onClick={handleLogout}
-          className="absolute top-4 glow-effect right-4 bg-gray-900 text-white p-3 rounded-full hover:bg-gray-700"
+          className="absolute top-4 right-4 text-white 0-2 rounded-full"
         >
-          Logout
+          <MdOutlineExitToApp className="text-2xl text-yellow-400" />
         </button>
       )}
 

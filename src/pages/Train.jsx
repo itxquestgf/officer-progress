@@ -4,11 +4,7 @@ import { db } from "../firebase";
 import {
   TrainIcon,
   PlayIcon,
-  PauseIcon,
-  StopIcon,
   ClockIcon,
-  ResetIcon,
-  ArrowLeftIcon,
   StatusActiveIcon,
   StatusIdleIcon,
   StatusReadyIcon,
@@ -19,7 +15,6 @@ import {
  * wahana2 = Train 1
  * wahana5 = Train 2
  */
-
 const TRAINS = {
   wahana2: "Train 1",
   wahana5: "Train 2",
@@ -51,18 +46,14 @@ export default function Train() {
   }, []);
 
   /* =========================
-      LIVE TIMER (KUNING & BIRU)
+      LIVE TIMER
   ========================== */
   useEffect(() => {
     const intervals = {};
 
     Object.keys(TRAINS).forEach((key) => {
       const data = allWahana[key];
-
-      if (
-        (data?.step === 1 || data?.step === 2) &&
-        data.startTime
-      ) {
+      if ((data?.step === 1 || data?.step === 2) && data.startTime) {
         intervals[key] = setInterval(() => {
           const diff = Math.floor((Date.now() - data.startTime) / 1000);
           setLiveTimers((prev) => ({
@@ -85,7 +76,7 @@ export default function Train() {
   }, [allWahana]);
 
   /* =========================
-      WARNA STATUS
+      UTIL
   ========================== */
   const getColor = (step) => {
     if (step === 2) return "bg-blue-500";
@@ -93,9 +84,6 @@ export default function Train() {
     return "bg-gray-400";
   };
 
-  /* =========================
-      HITUNG DURASI FINAL
-  ========================== */
   const calcDuration = (start) => {
     const diff = Math.floor((Date.now() - start) / 1000);
     return {
@@ -104,11 +92,15 @@ export default function Train() {
     };
   };
 
+  const getStatusIcon = (step) => {
+    if (step === 2) return <StatusReadyIcon className="w-5 h-5 text-white" />;
+    if (step === 1) return <StatusActiveIcon className="w-5 h-5 text-black" />;
+    return <StatusIdleIcon className="w-5 h-5" />;
+  };
+
   /* =========================
-      FLOW TOMBOL UTAMA
-      Abu → Kuning (START)
-      Kuning → Biru (LANJUT)
-      Biru → Abu (STOP + LOG)
+      MAIN BUTTON FLOW
+      🔥 MAINTENANCE DIABAIKAN
   ========================== */
   const handleClick = (key) => {
     const data = allWahana[key];
@@ -120,18 +112,16 @@ export default function Train() {
     if (step === 0) {
       step = 1;
       startTime = now;
-    } 
-    else if (step === 1) {
+    } else if (step === 1) {
       step = 2;
-    } 
-    else if (step === 2) {
+    } else if (step === 2) {
       if (startTime) {
         const duration = calcDuration(startTime);
         set(ref(db, `logs/${key}/batch${batch}/group${group}`), { duration });
       }
 
-      startTime = null;
       step = 0;
+      startTime = null;
       group++;
 
       if (group > 3) {
@@ -141,6 +131,7 @@ export default function Train() {
     }
 
     set(ref(db, `wahana/${key}`), {
+      ...data,
       batch,
       group,
       step,
@@ -149,55 +140,58 @@ export default function Train() {
   };
 
   /* =========================
-      PREVIOUS & RESET
+      MAINTENANCE (STATUS ONLY)
   ========================== */
-  const previousGroup = (key) => {
-    const data = allWahana[key];
-    if (!data) return;
+  const handleMaintenance = (key) => {
+  const data = allWahana[key];
+  if (!data) return;
 
-    let { batch, group } = data;
-    group--;
+  const now = Date.now();
+  const startTime = new Date(now).toLocaleString(); // Menggunakan waktu lokal sebagai waktu mulai
 
-    if (group < 1) {
-      batch = Math.max(1, batch - 1);
-      group = 3;
-    }
+  // START
+  if (!data.maintenance) {
+    set(ref(db, `wahana/${key}`), {
+      ...data,
+      maintenance: true,
+      maintenanceStart: now,
+    });
+  }
+  // STOP
+  else {
+    const maintenanceStart = data.maintenanceStart;
+    const maintenanceEnd = now;
+
+    // Menghitung durasi dalam detik
+    const durationInSeconds = Math.floor((maintenanceEnd - maintenanceStart) / 1000);
+    const hours = Math.floor(durationInSeconds / 3600);
+    const minutes = Math.floor((durationInSeconds % 3600) / 60);
+    const seconds = durationInSeconds % 60;
+
+    const duration = `${hours}-${minutes}-${seconds}`; // Format jam-menit-detik
+
+    const maintenanceKey = `${startTime}-${new Date(maintenanceEnd).toLocaleString()}`;
+
+    set(ref(db, `maintenance/${maintenanceKey}`), {
+      maintenanceStart: startTime,
+      maintenanceEnd: new Date(maintenanceEnd).toLocaleString(),
+      duration: duration, // Waktu perbaikan
+    });
 
     set(ref(db, `wahana/${key}`), {
       ...data,
-      batch,
-      group,
-      step: 0,
-      startTime: null,
+      maintenance: false,
+      maintenanceStart: null,
     });
-  };
+  }
+};
 
-  const resetWrongClick = (key) => {
-    const data = allWahana[key];
-    if (!data) return;
-
-    set(ref(db, `wahana/${key}`), {
-      ...data,
-      step: 0,
-      startTime: null,
-    });
-  };
-
-  /* =========================
-      STATUS ICON
-  ========================== */
-  const getStatusIcon = (step) => {
-    if (step === 2) return <StatusReadyIcon className="w-5 h-5 text-white" />;
-    if (step === 1) return <StatusActiveIcon className="w-5 h-5 text-black" />;
-    return <StatusIdleIcon className="w-5 h-5" />;
-  };
 
   /* =========================
       UI
   ========================== */
   return (
     <div className="min-h-screen bg-gray-900 text-white px-4 py-6">
-
       {/* HEADER */}
       <div className="text-center mb-8">
         <div className="flex justify-center items-center gap-2">
@@ -206,9 +200,7 @@ export default function Train() {
             Monitor Train
           </h1>
         </div>
-        <p className="text-sm text-gray-400">
-          Kontrol Train 1 & Train 2
-        </p>
+        <p className="text-sm text-gray-400">Train 1 & Train 2</p>
       </div>
 
       {/* STATUS 8 WAHANA */}
@@ -216,13 +208,12 @@ export default function Train() {
         {[1,2,3,4,5,6,7,8].map((i) => {
           const data = allWahana[`wahana${i}`];
           return (
-            <div key={i} className="flex flex-col items-center text-center">
-              {data && (
-                <div className="text-[10px] text-yellow-400 mb-1">
-                  B{data.batch} • G{data.group}
-                </div>
-              )}
-              <div className={`w-10 h-10 rounded-full ${getColor(data?.step)} flex items-center justify-center`}>
+            <div key={i} className="flex flex-col items-center">
+              <div
+                className={`w-10 h-10 rounded-full ${getColor(data?.step)}
+                flex items-center justify-center
+                ${data?.maintenance ? "ring-2 ring-red-500" : ""}`}
+              >
                 {getStatusIcon(data?.step)}
               </div>
               <span className="text-[11px] mt-1 opacity-80">
@@ -241,26 +232,28 @@ export default function Train() {
 
           return (
             <div key={key} className="bg-gray-800 rounded-xl p-6 text-center">
-
               <h2 className="text-lg font-bold text-yellow-400 mb-1">
                 {TRAINS[key]}
               </h2>
 
               {data && (
-                <p className="text-sm mb-6 text-gray-300">
+                <p className="text-sm mb-4 text-gray-300">
                   Batch {data.batch} • Group {data.group}
                 </p>
               )}
 
-              {/* MAIN BUTTON */}
+              {/* MAIN BUTTON (ALWAYS ACTIVE) */}
               <button
                 onClick={() => handleClick(key)}
-                className={`w-32 h-32 rounded-full mx-auto mb-6 flex items-center justify-center shadow-xl ${getColor(data?.step)}`}
+                className={`w-32 h-32 rounded-full mx-auto mb-4
+                  flex items-center justify-center shadow-xl
+                  ${getColor(data?.step)}
+                  active:scale-95`}
               >
                 {(data?.step === 1 || data?.step === 2) ? (
                   <div className="flex flex-col items-center">
-                    <ClockIcon className={`w-6 h-6 ${data.step === 2 ? "text-white" : "text-black"}`} />
-                    <span className={`text-xl font-mono font-bold ${data.step === 2 ? "text-white" : "text-black"}`}>
+                    <ClockIcon className="w-6 h-6" />
+                    <span className="text-xl font-mono font-bold">
                       {String(time.minutes).padStart(2,"0")}:
                       {String(time.seconds).padStart(2,"0")}
                     </span>
@@ -270,23 +263,14 @@ export default function Train() {
                 )}
               </button>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => previousGroup(key)}
-                  className="flex-1 py-2 bg-gray-600 rounded-lg font-bold"
-                >
-                  <ArrowLeftIcon className="inline w-4 h-4 mr-1" />
-                  Previous
-                </button>
-
-                <button
-                  onClick={() => resetWrongClick(key)}
-                  className="flex-1 py-2 bg-red-600 rounded-lg font-bold"
-                >
-                  <ResetIcon className="inline w-4 h-4 mr-1" />
-                  Reset
-                </button>
-              </div>
+              {/* MAINTENANCE BUTTON */}
+              <button
+                onClick={() => handleMaintenance(key)}
+                className={`w-full py-2 rounded-lg font-bold
+                  ${data?.maintenance ? "bg-red-700 animate-pulse" : "bg-gray-700"}`}
+              >
+                {data?.maintenance ? "STOP MAINTENANCE" : "MAINTENANCE"}
+              </button>
             </div>
           );
         })}

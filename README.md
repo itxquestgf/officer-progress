@@ -45,7 +45,7 @@ Aplikasi ini digunakan untuk:
 * Set batch & group manual
 * Reset posisi wahana
 * Edit durasi log
-* Maintenance & debugging
+* maintenance & debugging
 
 ---
 
@@ -217,7 +217,7 @@ Role:
 
 * **Officer** → Operasional
 * **Monitor** → Monitoring
-* **Developer** → Maintenance
+* **Developer** → maintenance
 
 (Role diatur secara logika aplikasi)
 
