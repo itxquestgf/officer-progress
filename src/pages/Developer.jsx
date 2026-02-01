@@ -7,6 +7,7 @@ import {
   ClockIcon,
   AlertIcon,
 } from "../components/Icons";
+import Footer from "../components/Footer";
 
 const WAHANA_LIST = {
   wahana1: "Hologram",
@@ -218,6 +219,7 @@ const deleteBatchGroup = () => {
           </button>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

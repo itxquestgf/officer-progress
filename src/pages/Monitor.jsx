@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { MonitorIcon, DownloadIcon, ResetIcon, ClockIcon, StatusActiveIcon, StatusIdleIcon, StatusReadyIcon } from "../components/Icons";
 import { useNavigate } from "react-router-dom";
+import Footer from "../components/Footer";
 
 // NAMA WAHANA
 const WAHANA = {
@@ -287,6 +288,7 @@ export default function Monitor() {
           Reset Semua
         </button>
       </div>
+      <Footer />
     </div>
   );
 }

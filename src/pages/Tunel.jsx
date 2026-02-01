@@ -8,6 +8,7 @@ import {
   StatusIdleIcon,
   StatusReadyIcon,
 } from "../components/Icons";
+import Footer from "../components/Footer";
 
 /**
  * Tunel:
@@ -298,6 +299,7 @@ const handleMaintenance = (key) => {
           );
         })}
       </div>
+      <Footer />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../firebase"; // Import auth dari firebase.js
 import { useNavigate } from "react-router-dom";
 import { MdOutlineExitToApp } from "react-icons/md";
+import Footer from "../components/Footer";
 
 const wahanaCards = [
   { id: 1, name: "Hologram", path: "/officer/1", icon: "🤖" },
@@ -120,6 +121,7 @@ export default function Home() {
           <span>DEVELOPER</span>
         </Link>
       </div>
+      <Footer />
     </div>
   );
 }

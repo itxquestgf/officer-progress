@@ -2,6 +2,7 @@ import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase"; // Import auth dari firebase.js
 import { useNavigate } from "react-router-dom";
+import Footer from "../components/Footer";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -53,6 +54,7 @@ export default function Login() {
           Login
         </button>
       </form>
+      <Footer />
     </div>
   );
 }

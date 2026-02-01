@@ -9,6 +9,7 @@ import {
   StatusIdleIcon,
   StatusReadyIcon,
 } from "../components/Icons";
+import Footer from "../components/Footer";
 
 /**
  * Train:
@@ -275,6 +276,7 @@ export default function Train() {
           );
         })}
       </div>
+      <Footer />
     </div>
   );
 }
