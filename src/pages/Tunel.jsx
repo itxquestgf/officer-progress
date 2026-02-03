@@ -17,19 +17,20 @@ import Footer from "../components/Footer";
  */
 
 const TUNELS = {
-  wahana6: "Main Tunel",
-  wahana7: "Chamber AI",
+  wahana7: "Main Tunel",
+  wahana8: "Chamber AI",
 };
 
 const WAHANA_NAME = {
   1: "Hologram",
-  2: "Train 1",
-  3: "Dream Farm",
-  4: "Space-X",
-  5: "Train 2",
-  6: "Tunel",
-  7: "Chamber AI",
-  8: "B.Gondola & Gondola",
+  2: "Totem",
+  3: "Train 1",
+  4: "Dream Farm",
+  5: "Space-X",
+  6: "Train 2",
+  7: "Tunel",
+  8: "Chamber AI",
+  9: "B.Gondola & Gondola",
 };
 
 export default function Tunel() {
@@ -78,7 +79,7 @@ export default function Tunel() {
   }, [allWahana]);
 
   /* =========================
-      WARNA STATUS
+      UTIL
   ========================== */
   const getColor = (step) => {
     if (step === 2) return "bg-blue-500";
@@ -86,9 +87,12 @@ export default function Tunel() {
     return "bg-gray-400";
   };
 
-  /* =========================
-      HITUNG DURASI
-  ========================== */
+  const getStatusIcon = (step) => {
+    if (step === 2) return <StatusReadyIcon className="w-5 h-5 text-white" />;
+    if (step === 1) return <StatusActiveIcon className="w-5 h-5 text-black" />;
+    return <StatusIdleIcon className="w-5 h-5" />;
+  };
+
   const calcDuration = (start) => {
     const diff = Math.floor((Date.now() - start) / 1000);
     return {
@@ -98,8 +102,7 @@ export default function Tunel() {
   };
 
   /* =========================
-      MAIN BUTTON FLOW
-      (MAINTENANCE DIABAIKAN)
+      MAIN FLOW
   ========================== */
   const handleClick = (key) => {
     const data = allWahana[key];
@@ -139,63 +142,6 @@ export default function Tunel() {
   };
 
   /* =========================
-      MAINTENANCE (SAMA TRAIN)
-  ========================== */
-const handleMaintenance = (key) => {
-  const data = allWahana[key];
-  if (!data) return;
-
-  const now = Date.now();
-  const startTime = new Date(now).toLocaleString(); // Menggunakan waktu lokal sebagai waktu mulai
-
-  // START
-  if (!data.maintenance) {
-    set(ref(db, `wahana/${key}`), {
-      ...data,
-      maintenance: true,
-      maintenanceStart: now,
-    });
-  }
-  // STOP
-  else {
-    const maintenanceStart = data.maintenanceStart;
-    const maintenanceEnd = now;
-
-    // Menghitung durasi dalam detik
-    const durationInSeconds = Math.floor((maintenanceEnd - maintenanceStart) / 1000);
-    const hours = Math.floor(durationInSeconds / 3600);
-    const minutes = Math.floor((durationInSeconds % 3600) / 60);
-    const seconds = durationInSeconds % 60;
-
-    const duration = `${hours}-${minutes}-${seconds}`; // Format jam-menit-detik
-
-    const maintenanceKey = `${startTime}-${new Date(maintenanceEnd).toLocaleString()}`;
-
-    set(ref(db, `maintenance/${maintenanceKey}`), {
-      maintenanceStart: startTime,
-      maintenanceEnd: new Date(maintenanceEnd).toLocaleString(),
-      duration: duration, // Waktu perbaikan
-    });
-
-    set(ref(db, `wahana/${key}`), {
-      ...data,
-      maintenance: false,
-      maintenanceStart: null,
-    });
-  }
-};
-
-
-  /* =========================
-      STATUS ICON
-  ========================== */
-  const getStatusIcon = (step) => {
-    if (step === 2) return <StatusReadyIcon className="w-5 h-5 text-white" />;
-    if (step === 1) return <StatusActiveIcon className="w-5 h-5 text-black" />;
-    return <StatusIdleIcon className="w-5 h-5" />;
-  };
-
-  /* =========================
       UI
   ========================== */
   return (
@@ -211,9 +157,9 @@ const handleMaintenance = (key) => {
         </p>
       </div>
 
-      {/* STATUS 8 WAHANA */}
+      {/* STATUS 9 WAHANA */}
       <div className="grid grid-cols-4 gap-4 mb-10">
-        {[1,2,3,4,5,6,7,8].map((i) => {
+        {[1,2,3,4,5,6,7,8,9].map((i) => {
           const data = allWahana[`wahana${i}`];
           return (
             <div key={i} className="flex flex-col items-center text-center">
@@ -258,7 +204,6 @@ const handleMaintenance = (key) => {
                 </p>
               )}
 
-              {/* MAIN BUTTON */}
               <button
                 onClick={() => handleClick(key)}
                 className={`w-32 h-32 rounded-full mx-auto mb-4
@@ -277,8 +222,8 @@ const handleMaintenance = (key) => {
                         data.step === 2 ? "text-white" : "text-black"
                       }`}
                     >
-                      {String(time.minutes).padStart(2, "0")}:
-                      {String(time.seconds).padStart(2, "0")}
+                      {String(time.minutes).padStart(2,"0")}:
+                      {String(time.seconds).padStart(2,"0")}
                     </span>
                   </div>
                 ) : (
@@ -286,19 +231,11 @@ const handleMaintenance = (key) => {
                 )}
               </button>
 
-              {/* MAINTENANCE BUTTON */}
-              <button
-                onClick={() => handleMaintenance(key)}
-                className={`w-full py-2 rounded-lg font-bold
-                ${data?.maintenance ? "bg-red-700 animate-pulse" : "bg-gray-700"}`}
-              >
-                {data?.maintenance ? "STOP MAINTENANCE" : "MAINTENANCE"}
-              </button>
-
             </div>
           );
         })}
       </div>
+
       <Footer />
     </div>
   );

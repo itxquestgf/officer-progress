@@ -9,15 +9,17 @@ import {
 } from "../components/Icons";
 import Footer from "../components/Footer";
 
+// UPDATE: List wahana lengkap 1-9 sesuai urutan terbaru
 const WAHANA_LIST = {
   wahana1: "Hologram",
-  wahana2: "Train 1",
-  wahana3: "Dream Farm",
-  wahana4: "Space-X",
-  wahana5: "Train 2",
-  wahana6: "Tunel",
-  wahana7: "Chamber AI ",
-  wahana8: " B.Gondola & Gondola",
+  wahana2: "Totem",
+  wahana3: "Train 1",
+  wahana4: "Dream Farm",
+  wahana5: "Space-X",
+  wahana6: "Train 2",
+  wahana7: "Tunel",
+  wahana8: "Chamber AI",
+  wahana9: "B.Gondola & Gondola",
 };
 
 export default function Developer() {
@@ -39,9 +41,11 @@ export default function Developer() {
   }, []);
 
   /* =========================
-      SET POSISI MANUAL
+      SET POSISI MANUAL (RESET STEP)
   ========================== */
   const setPosition = () => {
+    if (!window.confirm(`Set ${WAHANA_LIST[selected]} ke Batch ${batch} Group ${group}?`)) return;
+    
     set(ref(db, `wahana/${selected}`), {
       batch: Number(batch),
       group: Number(group),
@@ -53,41 +57,33 @@ export default function Developer() {
   /* =========================
       HAPUS DATA BATCH & GROUP
   ========================== */
-  /* =========================
-      HAPUS DATA BATCH & GROUP
-========================== */
-const deleteBatchGroup = () => {
-  const data = allWahana[selected];
-  if (!data) return;
+  const deleteBatchGroup = () => {
+    if (!window.confirm(`Hapus data waktu ${WAHANA_LIST[selected]} Batch ${batch} Group ${group}?`)) return;
 
-  // Menghapus data durasi (menit dan detik) untuk batch dan group yang dipilih
-  const pathToDuration = `logs/${selected}/batch${batch}/group${group}/duration`;
+    // Menghapus data durasi di node logs
+    const pathToDuration = `logs/${selected}/batch${batch}/group${group}`;
 
-  // Menghapus data waktu
-  update(ref(db, pathToDuration), {
-    minutes: null, // Menghapus data waktu
-    seconds: null,
-  })
-    .then(() => {
-      console.log('Data waktu berhasil dihapus');
-    })
-    .catch((error) => {
-      console.error('Gagal menghapus data waktu:', error);
-    });
-};
-
+    set(ref(db, pathToDuration), null)
+      .then(() => {
+        alert('Data waktu berhasil dihapus');
+      })
+      .catch((error) => {
+        console.error('Gagal menghapus data waktu:', error);
+      });
+  };
 
   /* =========================
       SET MENIT & DETIK MANUAL
   ========================== */
   const setManualTime = () => {
-    update(
-      ref(db, `logs/${selected}/batch${batch}/group${group}/duration`),
-      {
-        minutes: Number(minutes),
-        seconds: Number(seconds),
-      }
-    );
+    const pathToDuration = `logs/${selected}/batch${batch}/group${group}/duration`;
+    
+    update(ref(db, pathToDuration), {
+      minutes: Number(minutes),
+      seconds: Number(seconds),
+    }).then(() => {
+        alert(`Waktu ${WAHANA_LIST[selected]} berhasil diupdate!`);
+    });
   };
 
   return (
@@ -95,54 +91,55 @@ const deleteBatchGroup = () => {
       {/* Header */}
       <div className="text-center mb-8 md:mb-10 fade-in">
         <div className="flex items-center justify-center gap-3 mb-2">
-          <SettingsIcon className="w-8 h-8 md:w-10 md:h-10 text-yellow-400 icon-hover rotate-icon" />
+          <SettingsIcon className="w-8 h-8 md:w-10 md:h-10 text-yellow-400" />
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400">
             Developer Mode
           </h1>
         </div>
-        <p className="text-sm md:text-base text-gray-400 fade-in-delay-1">
-          Kontrol dan Konfigurasi Manual
+        <p className="text-sm md:text-base text-gray-400">
+          Kontrol Manual Database Wahana
         </p>
       </div>
 
-      <div className="max-w-2xl mx-auto bg-gray-800/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 lg:p-10 space-y-6 md:space-y-8 shadow-2xl border border-gray-700/50 scale-in">
+      <div className="max-w-2xl mx-auto bg-gray-800/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 space-y-6 shadow-2xl border border-gray-700/50">
+        
         {/* PILIH WAHANA */}
-        <div className="fade-in-delay-2">
-          <label className="flex items-center gap-2 text-sm md:text-base font-semibold mb-2 text-gray-300">
+        <div>
+          <label className="flex items-center gap-2 text-sm font-semibold mb-2 text-gray-300 uppercase tracking-wider">
             <AlertIcon className="w-4 h-4 text-yellow-400" />
-            Pilih Wahana
+            Wahana Target
           </label>
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
-            className="w-full p-3 md:p-4 rounded-xl bg-gray-700 hover:bg-gray-600 border border-gray-600 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/50 text-base transition-all duration-300 transform hover:scale-[1.02]"
+            className="w-full p-4 rounded-xl bg-gray-700 border border-gray-600 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/50 text-white transition-all shadow-inner"
           >
             {Object.keys(WAHANA_LIST).map((key) => (
               <option key={key} value={key}>
-                {WAHANA_LIST[key]}
+                {key.toUpperCase()} - {WAHANA_LIST[key]}
               </option>
             ))}
           </select>
         </div>
 
         {/* SET BATCH & GROUP */}
-        <div className="grid grid-cols-2 gap-4 md:gap-6 fade-in-delay-3">
+        <div className="grid grid-cols-2 gap-4 md:gap-6">
           <div>
-            <label className="block text-sm md:text-base font-semibold mb-2 text-gray-300">
-              Batch
+            <label className="block text-xs font-bold mb-2 text-gray-400 uppercase">
+              Target Batch
             </label>
             <input
               type="number"
               min="1"
               value={batch}
               onChange={(e) => setBatch(e.target.value)}
-              className="w-full p-3 md:p-4 rounded-xl bg-gray-700 hover:bg-gray-600 border border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 text-base transition-all duration-300 transform hover:scale-[1.02]"
+              className="w-full p-4 rounded-xl bg-gray-700 border border-gray-600 focus:border-blue-500 text-center text-xl font-bold"
             />
           </div>
 
           <div>
-            <label className="block text-sm md:text-base font-semibold mb-2 text-gray-300">
-              Group
+            <label className="block text-xs font-bold mb-2 text-gray-400 uppercase">
+              Target Group
             </label>
             <input
               type="number"
@@ -150,72 +147,68 @@ const deleteBatchGroup = () => {
               max="3"
               value={group}
               onChange={(e) => setGroup(e.target.value)}
-              className="w-full p-3 md:p-4 rounded-xl bg-gray-700 hover:bg-gray-600 border border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 text-base transition-all duration-300 transform hover:scale-[1.02]"
+              className="w-full p-4 rounded-xl bg-gray-700 border border-gray-600 focus:border-blue-500 text-center text-xl font-bold"
             />
           </div>
         </div>
 
-        <button
-          onClick={setPosition}
-          className="w-full py-3 md:py-4 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold text-base md:text-lg transition-all duration-300 shadow-lg active:scale-95 hover:scale-105 flex items-center justify-center gap-2 group"
-        >
-          <SettingsIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-          <span>SET POSISI</span>
-        </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+            onClick={setPosition}
+            className="py-4 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+            <SettingsIcon className="w-5 h-5" />
+            SET POSISI
+            </button>
 
-        {/* HAPUS DATA */}
-        <button
-          onClick={deleteBatchGroup}
-          className="w-full py-3 md:py-4 rounded-xl bg-red-600 hover:bg-red-700 font-bold text-base md:text-lg transition-all duration-300 shadow-lg active:scale-95 hover:scale-105 flex items-center justify-center gap-2 group"
-        >
-          <ResetIcon className="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" />
-          <span>HAPUS DATA</span>
-        </button>
+            <button
+            onClick={deleteBatchGroup}
+            className="py-4 rounded-xl bg-red-600 hover:bg-red-500 font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+            <ResetIcon className="w-5 h-5" />
+            HAPUS LOG
+            </button>
+        </div>
 
         {/* SET WAKTU */}
-        <div className="border-t border-gray-700 pt-6 md:pt-8 fade-in-delay-4">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <ClockIcon className="w-6 h-6 text-yellow-400" />
-            <h2 className="text-center font-bold text-lg md:text-xl text-yellow-400">
-              Set Waktu Manual
+        <div className="border-t border-gray-700 pt-8 mt-4">
+          <div className="flex items-center gap-2 mb-6 justify-center">
+            <ClockIcon className="w-5 h-5 text-yellow-400" />
+            <h2 className="font-bold text-yellow-400 uppercase tracking-widest">
+              Koreksi Waktu Manual
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 md:gap-6 mb-6">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
-              <label className="block text-sm md:text-base font-semibold mb-2 text-gray-300">
-                Menit
-              </label>
+              <label className="block text-xs text-gray-400 mb-2">MENIT</label>
               <input
                 type="number"
                 min="0"
                 value={minutes}
                 onChange={(e) => setMinutes(e.target.value)}
-                className="w-full p-3 md:p-4 rounded-xl bg-gray-700 hover:bg-gray-600 border border-gray-600 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/50 text-base transition-all duration-300 transform hover:scale-[1.02]"
+                className="w-full p-4 rounded-xl bg-gray-900 border border-gray-700 text-center text-2xl font-mono text-yellow-400"
               />
             </div>
 
             <div>
-              <label className="block text-sm md:text-base font-semibold mb-2 text-gray-300">
-                Detik
-              </label>
+              <label className="block text-xs text-gray-400 mb-2">DETIK</label>
               <input
                 type="number"
                 min="0"
                 max="59"
                 value={seconds}
                 onChange={(e) => setSeconds(e.target.value)}
-                className="w-full p-3 md:p-4 rounded-xl bg-gray-700 hover:bg-gray-600 border border-gray-600 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/50 text-base transition-all duration-300 transform hover:scale-[1.02]"
+                className="w-full p-4 rounded-xl bg-gray-900 border border-gray-700 text-center text-2xl font-mono text-yellow-400"
               />
             </div>
           </div>
 
           <button
             onClick={setManualTime}
-            className="w-full py-3 md:py-4 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-base md:text-lg transition-all duration-300 shadow-lg active:scale-95 hover:scale-105 flex items-center justify-center gap-2 group"
+            className="w-full py-4 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-black shadow-lg active:scale-95 transition-all"
           >
-            <ClockIcon className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-            <span>SET WAKTU</span>
+            UPDATE DURASI LOG
           </button>
         </div>
       </div>
