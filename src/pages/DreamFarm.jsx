@@ -1,6 +1,5 @@
-import { ref, onValue, set } from "firebase/database";
 import { useEffect, useState } from "react";
-import { db } from "../firebase";
+import { socket } from "../socket"; // Menggunakan koneksi socket lokal
 import {
   PlayIcon,
   ClockIcon,
@@ -30,13 +29,23 @@ export default function DreamFarm() {
   const [liveTimer, setLiveTimer] = useState({ minutes: 0, seconds: 0 });
 
   /* =========================
-      REALTIME LISTENER
+      REALTIME LISTENER (SOCKET)
   ========================== */
   useEffect(() => {
-    const unsub = onValue(ref(db, "wahana"), (snap) => {
-      setAllWahana(snap.val() || {});
+    // Ambil data awal
+    socket.on("initData", (db) => {
+      setAllWahana(db.wahana || {});
     });
-    return () => unsub();
+
+    // Dengarkan perubahan data secara realtime
+    socket.on("dataChanged", (db) => {
+      setAllWahana(db.wahana || {});
+    });
+
+    return () => {
+      socket.off("initData");
+      socket.off("dataChanged");
+    };
   }, []);
 
   /* =========================
@@ -85,10 +94,10 @@ export default function DreamFarm() {
   };
 
   /* =========================
-      MAIN FLOW
+      MAIN FLOW (SOCKET EMIT)
   ========================== */
   const handleClick = () => {
-    const data = allWahana[CURRENT_KEY];
+    const data = allWahana[CURRENT_KEY] || { batch: 1, group: 1, step: 0 };
     if (!data) return;
 
     let { batch, group, step, startTime = null } = data;
@@ -102,7 +111,11 @@ export default function DreamFarm() {
     } else if (step === 2) {
       if (startTime) {
         const duration = calcDuration(startTime);
-        set(ref(db, `logs/${CURRENT_KEY}/batch${batch}/group${group}`), { duration });
+        // Simpan log ke server lokal
+        socket.emit("updateData", {
+          path: `logs/${CURRENT_KEY}/batch${batch}/group${group}`,
+          value: { duration }
+        });
       }
 
       step = 0;
@@ -115,12 +128,16 @@ export default function DreamFarm() {
       }
     }
 
-    set(ref(db, `wahana/${CURRENT_KEY}`), {
-      ...data,
-      batch,
-      group,
-      step,
-      startTime,
+    // Update status wahana ke server PC lokal
+    socket.emit("updateData", {
+      path: `wahana/${CURRENT_KEY}`,
+      value: {
+        ...data,
+        batch,
+        group,
+        step,
+        startTime,
+      }
     });
   };
 
@@ -145,7 +162,7 @@ export default function DreamFarm() {
                   B{data.batch} • G{data.group}
                 </div>
               )}
-              <div className={`w-10 h-10 rounded-full ${getColor(data?.step)} flex items-center justify-center`}>
+              <div className={`w-10 h-10 rounded-full ${getColor(data?.step)} flex items-center justify-center transition-colors duration-300`}>
                 {getStatusIcon(data?.step)}
               </div>
               <span className="text-[11px] mt-1 opacity-80">
@@ -163,13 +180,13 @@ export default function DreamFarm() {
             <h2 className="text-lg font-bold text-yellow-400 mb-1">
               {CURRENT_NAME}
             </h2>
-            <p className="text-sm mb-6 text-gray-300">
+            <p className="text-sm mb-6 text-gray-300 font-mono">
               Batch {allWahana[CURRENT_KEY].batch} • Group {allWahana[CURRENT_KEY].group}
             </p>
 
             <button
               onClick={handleClick}
-              className={`w-32 h-32 rounded-full mx-auto mb-4 flex items-center justify-center shadow-xl ${getColor(allWahana[CURRENT_KEY].step)}`}
+              className={`w-32 h-32 rounded-full mx-auto mb-4 flex items-center justify-center shadow-xl active:scale-95 transition-all ${getColor(allWahana[CURRENT_KEY].step)}`}
             >
               {allWahana[CURRENT_KEY].step === 1 || allWahana[CURRENT_KEY].step === 2 ? (
                 <div className="flex flex-col items-center">

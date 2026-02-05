@@ -1,6 +1,5 @@
-import { ref, onValue, set } from "firebase/database";
 import { useEffect, useState } from "react";
-import { db } from "../firebase";
+import { socket } from "../socket"; // Pastikan file socket.js sudah ada
 import {
   TrainIcon,
   PlayIcon,
@@ -38,13 +37,23 @@ export default function Train() {
   const [liveTimers, setLiveTimers] = useState({});
 
   /* =========================
-      REALTIME LISTENER
+      REALTIME LISTENER (SOCKET.IO)
   ========================== */
   useEffect(() => {
-    const unsub = onValue(ref(db, "wahana"), (snap) => {
-      setAllWahana(snap.val() || {});
+    // Ambil data awal dari server lokal
+    socket.on("initData", (db) => {
+      setAllWahana(db.wahana || {});
     });
-    return () => unsub();
+
+    // Update tiap ada perubahan data di PC
+    socket.on("dataChanged", (db) => {
+      setAllWahana(db.wahana || {});
+    });
+
+    return () => {
+      socket.off("initData");
+      socket.off("dataChanged");
+    };
   }, []);
 
   /* =========================
@@ -101,12 +110,10 @@ export default function Train() {
   };
 
   /* =========================
-      MAIN BUTTON FLOW
+      MAIN BUTTON FLOW (SOCKET EMIT)
   ========================== */
   const handleClick = (key) => {
-    const data = allWahana[key];
-    if (!data) return;
-
+    const data = allWahana[key] || { batch: 1, group: 1, step: 0 };
     let { batch, group, step, startTime = null } = data;
     const now = Date.now();
 
@@ -118,7 +125,11 @@ export default function Train() {
     } else if (step === 2) {
       if (startTime) {
         const duration = calcDuration(startTime);
-        set(ref(db, `logs/${key}/batch${batch}/group${group}`), { duration });
+        // Simpan log ke server lokal
+        socket.emit("updateData", {
+          path: `logs/${key}/batch${batch}/group${group}`,
+          value: { duration }
+        });
       }
 
       step = 0;
@@ -131,46 +142,54 @@ export default function Train() {
       }
     }
 
-    set(ref(db, `wahana/${key}`), {
-      ...data,
-      batch,
-      group,
-      step,
-      startTime,
+    // Update status wahana ke server lokal
+    socket.emit("updateData", {
+      path: `wahana/${key}`,
+      value: {
+        ...data,
+        batch,
+        group,
+        step,
+        startTime,
+      }
     });
   };
 
   /* =========================
-      MAINTENANCE
+      MAINTENANCE (SOCKET EMIT)
   ========================== */
   const handleMaintenance = (key) => {
-    const data = allWahana[key];
-    if (!data) return;
-
+    const data = allWahana[key] || { maintenance: false };
     const now = Date.now();
 
     if (!data.maintenance) {
-      set(ref(db, `wahana/${key}`), {
-        ...data,
-        maintenance: true,
-        maintenanceStart: now,
+      socket.emit("updateData", {
+        path: `wahana/${key}`,
+        value: {
+          ...data,
+          maintenance: true,
+          maintenanceStart: now,
+        }
       });
     } else {
-      const durationInSeconds = Math.floor(
-        (now - data.maintenanceStart) / 1000
-      );
+      const durationInSeconds = Math.floor((now - data.maintenanceStart) / 1000);
       const h = Math.floor(durationInSeconds / 3600);
       const m = Math.floor((durationInSeconds % 3600) / 60);
       const s = durationInSeconds % 60;
 
-      set(ref(db, `maintenance/${key}/${data.maintenanceStart}-${now}`), {
-        duration: `${h}-${m}-${s}`,
+      // Simpan log maintenance ke server lokal
+      socket.emit("updateData", {
+        path: `maintenance/${key}/${data.maintenanceStart}-${now}`,
+        value: { duration: `${h}-${m}-${s}` }
       });
 
-      set(ref(db, `wahana/${key}`), {
-        ...data,
-        maintenance: false,
-        maintenanceStart: null,
+      socket.emit("updateData", {
+        path: `wahana/${key}`,
+        value: {
+          ...data,
+          maintenance: false,
+          maintenanceStart: null,
+        }
       });
     }
   };
@@ -187,7 +206,7 @@ export default function Train() {
       </div>
 
       {/* STATUS BULATAN */}
-      <div className="grid grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-4 md:grid-cols-9 gap-4 mb-10">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => {
           const data = allWahana[`wahana${i}`];
           return (

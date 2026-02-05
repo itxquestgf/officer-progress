@@ -1,6 +1,5 @@
-import { ref, onValue, update, set } from "firebase/database";
 import { useEffect, useState } from "react";
-import { db } from "../firebase";
+import { socket } from "../socket"; // Menggunakan koneksi socket lokal
 import {
   SettingsIcon,
   ResetIcon,
@@ -31,26 +30,40 @@ export default function Developer() {
   const [seconds, setSeconds] = useState(0);
 
   /* =========================
-      LOAD DATA
+      LOAD DATA (SOCKET.IO)
   ========================== */
   useEffect(() => {
-    const unsub = onValue(ref(db, "wahana"), (snap) => {
-      setAllWahana(snap.val() || {});
+    // Ambil data awal saat konek
+    socket.on("initData", (db) => {
+      setAllWahana(db.wahana || {});
     });
-    return () => unsub();
+
+    // Update data setiap ada perubahan di server
+    socket.on("dataChanged", (db) => {
+      setAllWahana(db.wahana || {});
+    });
+
+    return () => {
+      socket.off("initData");
+      socket.off("dataChanged");
+    };
   }, []);
 
   /* =========================
-      SET POSISI MANUAL (RESET STEP)
+      SET POSISI MANUAL
   ========================== */
   const setPosition = () => {
     if (!window.confirm(`Set ${WAHANA_LIST[selected]} ke Batch ${batch} Group ${group}?`)) return;
     
-    set(ref(db, `wahana/${selected}`), {
-      batch: Number(batch),
-      group: Number(group),
-      step: 0,
-      startTime: null,
+    // Kirim update status ke server lokal
+    socket.emit("updateData", {
+      path: `wahana/${selected}`,
+      value: {
+        batch: Number(batch),
+        group: Number(group),
+        step: 0,
+        startTime: null,
+      }
     });
   };
 
@@ -60,30 +73,31 @@ export default function Developer() {
   const deleteBatchGroup = () => {
     if (!window.confirm(`Hapus data waktu ${WAHANA_LIST[selected]} Batch ${batch} Group ${group}?`)) return;
 
-    // Menghapus data durasi di node logs
-    const pathToDuration = `logs/${selected}/batch${batch}/group${group}`;
-
-    set(ref(db, pathToDuration), null)
-      .then(() => {
-        alert('Data waktu berhasil dihapus');
-      })
-      .catch((error) => {
-        console.error('Gagal menghapus data waktu:', error);
-      });
+    // Menghapus data dengan mengirim nilai null ke path log tertentu
+    socket.emit("updateData", {
+      path: `logs/${selected}/batch${batch}/group${group}`,
+      value: null
+    });
+    
+    alert('Instruksi hapus waktu telah dikirim ke server');
   };
 
   /* =========================
       SET MENIT & DETIK MANUAL
   ========================== */
   const setManualTime = () => {
-    const pathToDuration = `logs/${selected}/batch${batch}/group${group}/duration`;
+    // Jalur penyimpanan log durasi
+    const path = `logs/${selected}/batch${batch}/group${group}/duration`;
     
-    update(ref(db, pathToDuration), {
-      minutes: Number(minutes),
-      seconds: Number(seconds),
-    }).then(() => {
-        alert(`Waktu ${WAHANA_LIST[selected]} berhasil diupdate!`);
+    socket.emit("updateData", {
+      path: path,
+      value: {
+        minutes: Number(minutes),
+        seconds: Number(seconds),
+      }
     });
+
+    alert(`Waktu ${WAHANA_LIST[selected]} berhasil diupdate di server PC!`);
   };
 
   return (
@@ -97,7 +111,7 @@ export default function Developer() {
           </h1>
         </div>
         <p className="text-sm md:text-base text-gray-400">
-          Kontrol Manual Database Wahana
+          Kontrol Manual Database Wahana (PC Server)
         </p>
       </div>
 

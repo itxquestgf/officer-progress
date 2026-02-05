@@ -1,6 +1,5 @@
-import { ref, onValue, set } from "firebase/database";
 import { useEffect, useState } from "react";
-import { db } from "../firebase";
+import { socket } from "../socket"; // Koneksi ke server lokal PC
 import {
   PlayIcon,
   ClockIcon,
@@ -31,13 +30,23 @@ export default function SpaceX() {
   const [liveTimer, setLiveTimer] = useState({ minutes: 0, seconds: 0 });
 
   /* =========================
-      REALTIME LISTENER
+      REALTIME LISTENER (SOCKET)
   ========================== */
   useEffect(() => {
-    const unsub = onValue(ref(db, "wahana"), (snap) => {
-      setAllWahana(snap.val() || {});
+    // Ambil data awal dari database.json lokal
+    socket.on("initData", (db) => {
+      setAllWahana(db.wahana || {});
     });
-    return () => unsub();
+
+    // Dengarkan perubahan data dari operator lain/monitor
+    socket.on("dataChanged", (db) => {
+      setAllWahana(db.wahana || {});
+    });
+
+    return () => {
+      socket.off("initData");
+      socket.off("dataChanged");
+    };
   }, []);
 
   /* =========================
@@ -86,10 +95,10 @@ export default function SpaceX() {
   };
 
   /* =========================
-      MAIN FLOW
+      MAIN FLOW (SOCKET EMIT)
   ========================== */
   const handleClick = () => {
-    const data = allWahana[CURRENT_KEY];
+    const data = allWahana[CURRENT_KEY] || { batch: 1, group: 1, step: 0 };
     if (!data) return;
 
     let { batch, group, step, startTime = null } = data;
@@ -103,7 +112,11 @@ export default function SpaceX() {
     } else if (step === 2) {
       if (startTime) {
         const duration = calcDuration(startTime);
-        set(ref(db, `logs/${CURRENT_KEY}/batch${batch}/group${group}`), { duration });
+        // Simpan log ke server lokal PC
+        socket.emit("updateData", {
+          path: `logs/${CURRENT_KEY}/batch${batch}/group${group}`,
+          value: { duration }
+        });
       }
 
       step = 0;
@@ -116,12 +129,16 @@ export default function SpaceX() {
       }
     }
 
-    set(ref(db, `wahana/${CURRENT_KEY}`), {
-      ...data,
-      batch,
-      group,
-      step,
-      startTime,
+    // Emit update ke server untuk diteruskan ke database.json
+    socket.emit("updateData", {
+      path: `wahana/${CURRENT_KEY}`,
+      value: {
+        ...data,
+        batch,
+        group,
+        step,
+        startTime,
+      }
     });
   };
 
@@ -142,11 +159,11 @@ export default function SpaceX() {
           return (
             <div key={i} className="flex flex-col items-center text-center">
               {data && (
-                <div className="text-[10px] text-yellow-400 mb-1">
+                <div className="text-[10px] text-yellow-400 mb-1 font-mono">
                   B{data.batch} • G{data.group}
                 </div>
               )}
-              <div className={`w-10 h-10 rounded-full ${getColor(data?.step)} flex items-center justify-center shadow-lg`}>
+              <div className={`w-10 h-10 rounded-full ${getColor(data?.step)} flex items-center justify-center shadow-lg transition-colors duration-300`}>
                 {getStatusIcon(data?.step)}
               </div>
               <span className="text-[11px] mt-1 opacity-80 truncate w-full px-1">
@@ -165,8 +182,8 @@ export default function SpaceX() {
               {CURRENT_NAME}
             </h2>
             <p className="text-sm mb-8 text-gray-400">
-              Batch <span className="text-white font-bold">{allWahana[CURRENT_KEY].batch}</span> • 
-              Group <span className="text-white font-bold">{allWahana[CURRENT_KEY].group}</span>
+              Batch <span className="text-white font-bold font-mono">{allWahana[CURRENT_KEY].batch}</span> • 
+              Group <span className="text-white font-bold font-mono">{allWahana[CURRENT_KEY].group}</span>
             </p>
 
             <button
@@ -187,8 +204,8 @@ export default function SpaceX() {
                 <PlayIcon className="w-12 h-12 text-gray-700 translate-x-1" />
               )}
             </button>
-            <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-4">
-               Ketuk untuk Perbarui Status
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-4 font-semibold">
+                Ketuk untuk Perbarui Status
             </p>
           </div>
         )}

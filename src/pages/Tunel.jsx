@@ -1,6 +1,5 @@
-import { ref, onValue, set } from "firebase/database";
 import { useEffect, useState } from "react";
-import { db } from "../firebase";
+import { socket } from "../socket"; // Menggunakan koneksi socket lokal
 import {
   PlayIcon,
   ClockIcon,
@@ -12,10 +11,9 @@ import Footer from "../components/Footer";
 
 /**
  * Tunel:
- * wahana6 = Main Tunel
- * wahana7 = Chamber AI
+ * wahana7 = Main Tunel
+ * wahana8 = Chamber AI
  */
-
 const TUNELS = {
   wahana7: "Main Tunel",
   wahana8: "Chamber AI",
@@ -38,13 +36,23 @@ export default function Tunel() {
   const [liveTimers, setLiveTimers] = useState({});
 
   /* =========================
-      REALTIME LISTENER
+      REALTIME LISTENER (SOCKET)
   ========================== */
   useEffect(() => {
-    const unsub = onValue(ref(db, "wahana"), (snap) => {
-      setAllWahana(snap.val() || {});
+    // Ambil data awal
+    socket.on("initData", (db) => {
+      setAllWahana(db.wahana || {});
     });
-    return () => unsub();
+
+    // Dengarkan perubahan data
+    socket.on("dataChanged", (db) => {
+      setAllWahana(db.wahana || {});
+    });
+
+    return () => {
+      socket.off("initData");
+      socket.off("dataChanged");
+    };
   }, []);
 
   /* =========================
@@ -102,12 +110,10 @@ export default function Tunel() {
   };
 
   /* =========================
-      MAIN FLOW
+      MAIN FLOW (SOCKET EMIT)
   ========================== */
   const handleClick = (key) => {
-    const data = allWahana[key];
-    if (!data) return;
-
+    const data = allWahana[key] || { batch: 1, group: 1, step: 0 };
     let { batch, group, step, startTime = null } = data;
     const now = Date.now();
 
@@ -119,7 +125,11 @@ export default function Tunel() {
     } else if (step === 2) {
       if (startTime) {
         const duration = calcDuration(startTime);
-        set(ref(db, `logs/${key}/batch${batch}/group${group}`), { duration });
+        // Simpan log ke server PC
+        socket.emit("updateData", {
+          path: `logs/${key}/batch${batch}/group${group}`,
+          value: { duration }
+        });
       }
 
       step = 0;
@@ -132,12 +142,16 @@ export default function Tunel() {
       }
     }
 
-    set(ref(db, `wahana/${key}`), {
-      ...data,
-      batch,
-      group,
-      step,
-      startTime,
+    // Update status wahana ke server PC
+    socket.emit("updateData", {
+      path: `wahana/${key}`,
+      value: {
+        ...data,
+        batch,
+        group,
+        step,
+        startTime,
+      }
     });
   };
 
@@ -158,26 +172,26 @@ export default function Tunel() {
       </div>
 
       {/* STATUS 9 WAHANA */}
-      <div className="grid grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-4 md:grid-cols-9 gap-4 mb-10">
         {[1,2,3,4,5,6,7,8,9].map((i) => {
           const data = allWahana[`wahana${i}`];
           return (
             <div key={i} className="flex flex-col items-center text-center">
               {data && (
-                <div className="text-[10px] text-yellow-400 mb-1">
-                  B{data.batch} • G{data.group}
+                <div className="text-[10px] text-yellow-400 mb-1 font-mono">
+                  B{data.batch}•G{data.group}
                 </div>
               )}
 
               <div
                 className={`w-10 h-10 rounded-full ${getColor(data?.step)}
-                flex items-center justify-center
+                flex items-center justify-center transition-colors duration-300
                 ${data?.maintenance ? "ring-2 ring-red-500" : ""}`}
               >
                 {getStatusIcon(data?.step)}
               </div>
 
-              <span className="text-[11px] mt-1 opacity-80">
+              <span className="text-[11px] mt-1 opacity-80 truncate w-full px-1">
                 {WAHANA_NAME[i]}
               </span>
             </div>
@@ -192,14 +206,14 @@ export default function Tunel() {
           const time = liveTimers[key] || { minutes: 0, seconds: 0 };
 
           return (
-            <div key={key} className="bg-gray-800 rounded-xl p-6 text-center">
+            <div key={key} className="bg-gray-800 rounded-xl p-6 text-center border border-gray-700">
 
               <h2 className="text-lg font-bold text-yellow-400 mb-1">
                 {TUNELS[key]}
               </h2>
 
               {data && (
-                <p className="text-sm mb-6 text-gray-300">
+                <p className="text-sm mb-6 text-gray-400 font-mono">
                   Batch {data.batch} • Group {data.group}
                 </p>
               )}
@@ -207,7 +221,7 @@ export default function Tunel() {
               <button
                 onClick={() => handleClick(key)}
                 className={`w-32 h-32 rounded-full mx-auto mb-4
-                flex items-center justify-center shadow-xl
+                flex items-center justify-center shadow-2xl transition-all active:scale-95
                 ${getColor(data?.step)}`}
               >
                 {(data?.step === 1 || data?.step === 2) ? (
@@ -227,7 +241,7 @@ export default function Tunel() {
                     </span>
                   </div>
                 ) : (
-                  <PlayIcon className="w-10 h-10 text-gray-600" />
+                  <PlayIcon className="w-10 h-10 text-gray-600 opacity-80" />
                 )}
               </button>
 
