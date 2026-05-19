@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { socket } from "../socket"; // Menggunakan koneksi socket lokal
+import { socket, subscribeToDatabase } from "../socket"; // Menggunakan koneksi socket lokal
 import {
   SettingsIcon,
   ResetIcon,
@@ -33,20 +33,9 @@ export default function Developer() {
       LOAD DATA (SOCKET.IO)
   ========================== */
   useEffect(() => {
-    // Ambil data awal saat konek
-    socket.on("initData", (db) => {
+    return subscribeToDatabase((db) => {
       setAllWahana(db.wahana || {});
     });
-
-    // Update data setiap ada perubahan di server
-    socket.on("dataChanged", (db) => {
-      setAllWahana(db.wahana || {});
-    });
-
-    return () => {
-      socket.off("initData");
-      socket.off("dataChanged");
-    };
   }, []);
 
   /* =========================

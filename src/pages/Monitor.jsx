@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { socket } from "../socket";
+import { socket, subscribeToDatabase } from "../socket";
 import { MonitorIcon, DownloadIcon, ResetIcon, ClockIcon, StatusActiveIcon, StatusIdleIcon, StatusReadyIcon } from "../components/Icons";
 import Footer from "../components/Footer";
+import { formatWahanaDuration } from "../utils/wahanaTimer";
 
 // NAMA WAHANA
 const WAHANA = {
@@ -25,29 +26,25 @@ export default function Monitor() {
   const [logs, setLogs] = useState({});
   const [wahana, setWahana] = useState({});
   const [maintenance, setmaintenance] = useState({});
+  const [, setClockTick] = useState(0);
 
   /* =========================
       REALTIME LISTENER (SOCKET)
   ========================== */
   useEffect(() => {
-    // Ambil data awal (Wahana, Logs, Maintenance sekaligus dalam satu objek db)
-    socket.on("initData", (db) => {
+    return subscribeToDatabase((db) => {
       setWahana(db.wahana || {});
       setLogs(db.logs || {});
       setmaintenance(db.maintenance || {});
     });
+  }, []);
 
-    // Update tiap ada perubahan
-    socket.on("dataChanged", (db) => {
-      setWahana(db.wahana || {});
-      setLogs(db.logs || {});
-      setmaintenance(db.maintenance || {});
-    });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setClockTick(Date.now());
+    }, 1000);
 
-    return () => {
-      socket.off("initData");
-      socket.off("dataChanged");
-    };
+    return () => clearInterval(interval);
   }, []);
 
   const getColor = (step) => {
@@ -68,8 +65,6 @@ export default function Monitor() {
   const resetAll = () => {
     if (!window.confirm("Apakah Anda yakin ingin mereset semua data di PC Server?")) return;
     
-    // Kita kirim instruksi ke server untuk mengosongkan folder logs dan maintenance
-    // Serta mengembalikan wahana ke batch 1
     const newWahanaState = {};
     for (let i = 1; i <= 9; i++) {
       newWahanaState[`wahana${i}`] = {
@@ -80,7 +75,6 @@ export default function Monitor() {
       };
     }
 
-    // Reset via socket (mengirim path kosong untuk menghapus data di server)
     socket.emit("updateData", { path: "wahana", value: newWahanaState });
     socket.emit("updateData", { path: "logs", value: {} });
     socket.emit("updateData", { path: "maintenance", value: {} });
@@ -136,10 +130,17 @@ export default function Monitor() {
       <div className="grid grid-cols-3 md:grid-cols-9 gap-4 mb-10">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => {
           const data = wahana[`wahana${i}`];
+          const liveDuration = formatWahanaDuration(data);
           return (
             <div key={i} className="flex flex-col items-center text-center p-2 bg-gray-800/50 rounded-xl border border-gray-700/50">
-              <div className={`w-10 h-10 rounded-full ${getColor(data?.step)} flex items-center justify-center shadow-lg transition-all duration-500`}>
-                {getStatusIcon(data?.step)}
+              <div className={`w-14 h-14 rounded-full ${getColor(data?.step)} flex items-center justify-center shadow-lg transition-all duration-500`}>
+                {liveDuration ? (
+                  <span className={`text-[10px] font-mono font-bold ${data?.step === 2 ? "text-white" : "text-black"}`}>
+                    {liveDuration}
+                  </span>
+                ) : (
+                  getStatusIcon(data?.step)
+                )}
               </div>
               <span className="text-[9px] text-gray-400 mt-2 font-bold uppercase truncate w-full">{WAHANA[i]}</span>
               {data && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { socket } from "../socket"; // Koneksi ke server lokal PC
+import { socket, subscribeToDatabase } from "../socket"; // Koneksi ke server lokal PC
 import {
   PlayIcon,
   ClockIcon,
@@ -8,6 +8,7 @@ import {
   StatusReadyIcon,
 } from "../components/Icons";
 import Footer from "../components/Footer";
+import { formatWahanaDuration } from "../utils/wahanaTimer";
 
 // KONFIGURASI SPESIFIK SPACE-X
 const CURRENT_KEY = "wahana5";
@@ -28,25 +29,23 @@ const WAHANA_NAME = {
 export default function SpaceX() {
   const [allWahana, setAllWahana] = useState({});
   const [liveTimer, setLiveTimer] = useState({ minutes: 0, seconds: 0 });
+  const [, setClockTick] = useState(0);
 
   /* =========================
       REALTIME LISTENER (SOCKET)
   ========================== */
   useEffect(() => {
-    // Ambil data awal dari database.json lokal
-    socket.on("initData", (db) => {
+    return subscribeToDatabase((db) => {
       setAllWahana(db.wahana || {});
     });
+  }, []);
 
-    // Dengarkan perubahan data dari operator lain/monitor
-    socket.on("dataChanged", (db) => {
-      setAllWahana(db.wahana || {});
-    });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setClockTick(Date.now());
+    }, 1000);
 
-    return () => {
-      socket.off("initData");
-      socket.off("dataChanged");
-    };
+    return () => clearInterval(interval);
   }, []);
 
   /* =========================
@@ -156,6 +155,7 @@ export default function SpaceX() {
       <div className="grid grid-cols-4 gap-4 mb-10 max-w-lg mx-auto">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => {
           const data = allWahana[`wahana${i}`];
+          const liveDuration = formatWahanaDuration(data);
           return (
             <div key={i} className="flex flex-col items-center text-center">
               {data && (
@@ -163,8 +163,14 @@ export default function SpaceX() {
                   B{data.batch} • G{data.group}
                 </div>
               )}
-              <div className={`w-10 h-10 rounded-full ${getColor(data?.step)} flex items-center justify-center shadow-lg transition-colors duration-300`}>
-                {getStatusIcon(data?.step)}
+              <div className={`w-14 h-14 rounded-full ${getColor(data?.step)} flex items-center justify-center shadow-lg transition-colors duration-300`}>
+                {liveDuration ? (
+                  <span className={`text-[10px] font-mono font-bold ${data?.step === 2 ? "text-white" : "text-black"}`}>
+                    {liveDuration}
+                  </span>
+                ) : (
+                  getStatusIcon(data?.step)
+                )}
               </div>
               <span className="text-[11px] mt-1 opacity-80 truncate w-full px-1">
                 {WAHANA_NAME[i]}

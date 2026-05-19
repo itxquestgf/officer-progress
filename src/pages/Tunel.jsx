@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { socket } from "../socket"; // Menggunakan koneksi socket lokal
+import { socket, subscribeToDatabase } from "../socket"; // Menggunakan koneksi socket lokal
 import {
   PlayIcon,
   ClockIcon,
@@ -8,6 +8,7 @@ import {
   StatusReadyIcon,
 } from "../components/Icons";
 import Footer from "../components/Footer";
+import { formatWahanaDuration } from "../utils/wahanaTimer";
 
 /**
  * Tunel:
@@ -34,25 +35,23 @@ const WAHANA_NAME = {
 export default function Tunel() {
   const [allWahana, setAllWahana] = useState({});
   const [liveTimers, setLiveTimers] = useState({});
+  const [, setClockTick] = useState(0);
 
   /* =========================
       REALTIME LISTENER (SOCKET)
   ========================== */
   useEffect(() => {
-    // Ambil data awal
-    socket.on("initData", (db) => {
+    return subscribeToDatabase((db) => {
       setAllWahana(db.wahana || {});
     });
+  }, []);
 
-    // Dengarkan perubahan data
-    socket.on("dataChanged", (db) => {
-      setAllWahana(db.wahana || {});
-    });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setClockTick(Date.now());
+    }, 1000);
 
-    return () => {
-      socket.off("initData");
-      socket.off("dataChanged");
-    };
+    return () => clearInterval(interval);
   }, []);
 
   /* =========================
@@ -175,6 +174,7 @@ export default function Tunel() {
       <div className="grid grid-cols-4 md:grid-cols-9 gap-4 mb-10">
         {[1,2,3,4,5,6,7,8,9].map((i) => {
           const data = allWahana[`wahana${i}`];
+          const liveDuration = formatWahanaDuration(data);
           return (
             <div key={i} className="flex flex-col items-center text-center">
               {data && (
@@ -184,11 +184,17 @@ export default function Tunel() {
               )}
 
               <div
-                className={`w-10 h-10 rounded-full ${getColor(data?.step)}
+                className={`w-14 h-14 rounded-full ${getColor(data?.step)}
                 flex items-center justify-center transition-colors duration-300
                 ${data?.maintenance ? "ring-2 ring-red-500" : ""}`}
               >
-                {getStatusIcon(data?.step)}
+                {liveDuration ? (
+                  <span className={`text-[10px] font-mono font-bold ${data?.step === 2 ? "text-white" : "text-black"}`}>
+                    {liveDuration}
+                  </span>
+                ) : (
+                  getStatusIcon(data?.step)
+                )}
               </div>
 
               <span className="text-[11px] mt-1 opacity-80 truncate w-full px-1">
