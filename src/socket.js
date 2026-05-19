@@ -1,14 +1,17 @@
 import { io } from "socket.io-client";
 
 // URL Ngrok yang Anda dapatkan
-const SOCKET_URL = "https://cody-chronographic-tobi.ngrok-free.dev";
+export const SOCKET_URL = "https://cody-chronographic-tobi.ngrok-free.dev";
 
 export const socket = io(SOCKET_URL, {
-  transports: ["websocket"],
+  transports: ["websocket", "polling"],
+  upgrade: true,
   autoConnect: true,
   reconnection: true,
-  reconnectionAttempts: 5,
+  reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  timeout: 20000,
 });
 
 export const requestInitialData = () => {
