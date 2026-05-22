@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { socket, subscribeToDatabase } from "../socket"; // Menggunakan koneksi socket lokal
+import { socket, subscribeToDatabase } from "../socket";
 import {
   PlayIcon,
   ClockIcon,
@@ -10,13 +10,8 @@ import {
 import Footer from "../components/Footer";
 import { formatWahanaDuration } from "../utils/wahanaTimer";
 
-/**
- * Tunel:
- * wahana7 = Main Tunel
- * wahana8 = Chamber AI
- */
 const TUNELS = {
-  wahana7: "Main Tunel",
+  wahana7: "Tunel",
   wahana8: "Chamber AI",
 };
 
@@ -37,9 +32,6 @@ export default function Tunel() {
   const [liveTimers, setLiveTimers] = useState({});
   const [, setClockTick] = useState(0);
 
-  /* =========================
-      REALTIME LISTENER (SOCKET)
-  ========================== */
   useEffect(() => {
     return subscribeToDatabase((db) => {
       setAllWahana(db.wahana || {});
@@ -54,9 +46,6 @@ export default function Tunel() {
     return () => clearInterval(interval);
   }, []);
 
-  /* =========================
-      LIVE TIMER
-  ========================== */
   useEffect(() => {
     const intervals = {};
 
@@ -85,9 +74,6 @@ export default function Tunel() {
     return () => Object.values(intervals).forEach(clearInterval);
   }, [allWahana]);
 
-  /* =========================
-      UTIL
-  ========================== */
   const getColor = (step) => {
     if (step === 2) return "bg-blue-500";
     if (step === 1) return "bg-yellow-400";
@@ -108,9 +94,6 @@ export default function Tunel() {
     };
   };
 
-  /* =========================
-      MAIN FLOW (SOCKET EMIT)
-  ========================== */
   const handleClick = (key) => {
     const data = allWahana[key] || { batch: 1, group: 1, step: 0 };
     let { batch, group, step, startTime = null } = data;
@@ -124,7 +107,6 @@ export default function Tunel() {
     } else if (step === 2) {
       if (startTime) {
         const duration = calcDuration(startTime);
-        // Simpan log ke server PC
         socket.emit("updateData", {
           path: `logs/${key}/batch${batch}/group${group}`,
           value: { duration }
@@ -141,7 +123,6 @@ export default function Tunel() {
       }
     }
 
-    // Update status wahana ke server PC
     socket.emit("updateData", {
       path: `wahana/${key}`,
       value: {
@@ -154,25 +135,19 @@ export default function Tunel() {
     });
   };
 
-  /* =========================
-      UI
-  ========================== */
   return (
     <div className="min-h-screen bg-gray-900 text-white px-4 py-6">
-
-      {/* HEADER */}
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold text-yellow-400">
           Monitor Tunel
         </h1>
         <p className="text-sm text-gray-400">
-          Main Tunel & Chamber AI
+          Tunel & Chamber AI
         </p>
       </div>
 
-      {/* STATUS 9 WAHANA */}
       <div className="grid grid-cols-4 md:grid-cols-9 gap-4 mb-10">
-        {[1,2,3,4,5,6,7,8,9].map((i) => {
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => {
           const data = allWahana[`wahana${i}`];
           const liveDuration = formatWahanaDuration(data);
           return (
@@ -205,7 +180,6 @@ export default function Tunel() {
         })}
       </div>
 
-      {/* MAIN PANEL */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
         {Object.keys(TUNELS).map((key) => {
           const data = allWahana[key];
@@ -213,7 +187,6 @@ export default function Tunel() {
 
           return (
             <div key={key} className="bg-gray-800 rounded-xl p-6 text-center border border-gray-700">
-
               <h2 className="text-lg font-bold text-yellow-400 mb-1">
                 {TUNELS[key]}
               </h2>
@@ -233,24 +206,19 @@ export default function Tunel() {
                 {(data?.step === 1 || data?.step === 2) ? (
                   <div className="flex flex-col items-center">
                     <ClockIcon
-                      className={`w-6 h-6 ${
-                        data.step === 2 ? "text-white" : "text-black"
-                      }`}
+                      className={`w-6 h-6 ${data.step === 2 ? "text-white" : "text-black"}`}
                     />
                     <span
-                      className={`text-xl font-mono font-bold ${
-                        data.step === 2 ? "text-white" : "text-black"
-                      }`}
+                      className={`text-xl font-mono font-bold ${data.step === 2 ? "text-white" : "text-black"}`}
                     >
-                      {String(time.minutes).padStart(2,"0")}:
-                      {String(time.seconds).padStart(2,"0")}
+                      {String(time.minutes).padStart(2, "0")}:
+                      {String(time.seconds).padStart(2, "0")}
                     </span>
                   </div>
                 ) : (
                   <PlayIcon className="w-10 h-10 text-gray-600 opacity-80" />
                 )}
               </button>
-
             </div>
           );
         })}

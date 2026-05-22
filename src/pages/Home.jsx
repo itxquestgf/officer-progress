@@ -1,8 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Logo from "../assets/logo.png";
 import { MonitorIcon, SettingsIcon, HomeIcon } from "../components/Icons";
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { MdOutlineExitToApp } from "react-icons/md";
 import Footer from "../components/Footer";
 
@@ -21,44 +20,40 @@ const wahanaCards = [
   },
   {
     id: "tunel",
-    name: "Tunel & Chamber",
+    name: "Tunel & Chamber AI",
     path: "/officer/tunel",
     icon: "🧠",
   },
   {
     id: "dreamfarm",
     name: "Dream Farm",
-    path: "/dreamfarm", 
+    path: "/dreamfarm",
     icon: "🐮",
   },
   {
     id: "spacex",
     name: "Space-X",
-    path: "/spacex",    
+    path: "/spacex",
     icon: "🚀",
   },
   {
     id: "gondola",
     name: "B.Gondola & Gondola",
-    path: "/gondola",   
+    path: "/gondola",
     icon: "🚢",
   },
 ];
 
 export default function Home() {
-  // Simulasi user login untuk sistem lokal (bisa disesuaikan dengan sistem login baru Anda)
-  const [user, setUser] = useState({ name: "Officer" }); 
+  const [user] = useState({ name: "Officer" });
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Logic logout lokal
     navigate("/login");
   };
 
   return (
     <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center px-4 py-8">
-      
-      {/* Tombol Logout */}
       {user && (
         <button
           onClick={handleLogout}
@@ -68,7 +63,6 @@ export default function Home() {
         </button>
       )}
 
-      {/* Logo Section */}
       <div className="mb-8 md:mb-12 text-center animate-in fade-in duration-700">
         <div className="relative inline-block">
           <img
@@ -86,7 +80,6 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Wahana Grid */}
       <div className="w-full max-w-4xl mb-10">
         <div className="flex items-center justify-center gap-2 mb-6">
           <HomeIcon className="w-5 h-5 text-yellow-400" />
@@ -94,9 +87,9 @@ export default function Home() {
             Pilih Wahana
           </h2>
         </div>
-        
+
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {wahanaCards.map((wahana, index) => (
+          {wahanaCards.map((wahana) => (
             <Link
               key={wahana.id}
               to={wahana.path}
@@ -113,7 +106,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
         <Link
           to="/monitor"
@@ -131,7 +123,7 @@ export default function Home() {
           <span>DEVELOPER</span>
         </Link>
       </div>
-      
+
       <Footer />
     </div>
   );
